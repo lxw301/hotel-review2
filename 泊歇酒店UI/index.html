@@ -2,956 +2,225 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>房型好评生成器 · 酒店评价小助手</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>酒店好评分享</title>
 <style>
-  :root {
-    --primary: #f6a821;
-    --primary-dark: #d98f16;
-    --primary-soft: #fff6e5;
-    --ink: #1a1a1a;
-    --gray-6: #666;
-    --gray-9: #999;
-    --line: #eee;
-    --bg: #f6f6f6;
-    --card: #fff;
-    --radius: 16px;
-    --shadow: 0 2px 14px rgba(0,0,0,0.06);
-    --ok: #2ecc71;
-  }
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-  html, body {
-    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif;
-    background: var(--bg); color: var(--ink); font-size:14px;
-    overscroll-behavior:none;
-  }
+  html,body { font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue","Microsoft YaHei",sans-serif; background:#f4f4f4; color:#1a1a1a; }
+  body { max-width:520px; margin:0 auto; padding-bottom:env(safe-area-inset-bottom); }
 
-  .page { display:none; min-height:100vh; max-width:430px; margin:0 auto; flex-direction:column; position:relative; }
-  .page.active { display:flex; animation:pageIn .25s ease; }
-  @keyframes pageIn { from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:none;} }
+  .banner { background:linear-gradient(135deg,#f6a821,#d98f16); color:#fff; padding:28px 20px; text-align:center; }
+  .banner .brand { font-size:13px; opacity:.9; letter-spacing:1px; }
+  .banner .room { font-size:22px; font-weight:800; margin-top:6px; }
+  .banner .stars { font-size:20px; color:#fff; margin-top:6px; letter-spacing:3px; text-shadow:0 1px 3px rgba(0,0,0,.2); }
 
-  .topbar { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; background:var(--bg); position:sticky; top:0; z-index:20; }
-  .topbar .title { font-size:17px; font-weight:700; }
-  .topbar .sub-btn { background:var(--primary-soft); border:none; color:var(--primary-dark); font-size:13px; font-weight:600; padding:6px 12px; border-radius:16px; cursor:pointer; }
-  .topbar.has-back { justify-content:flex-start; gap:4px; }
-  .topbar.has-back .back { display:block; }
-  .topbar .back { display:none; background:none; border:none; font-size:20px; color:var(--ink); cursor:pointer; padding:2px 10px; line-height:1; }
+  .wrap { padding:16px; }
+  .card { background:#fff; border-radius:16px; box-shadow:0 2px 14px rgba(0,0,0,.06); padding:18px; margin-bottom:14px; }
+  .card .label { font-size:13px; font-weight:700; color:#666; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+  .card .label .bar { width:3px; height:14px; background:#f6a821; border-radius:2px; }
 
-  .footer-bar { position:sticky; bottom:0; padding:12px 16px calc(12px + env(safe-area-inset-bottom)); display:flex; gap:12px; }
-  .btn { flex:1; border:none; border-radius:24px; padding:14px; font-size:15px; font-weight:700; cursor:pointer; text-align:center; transition:transform .12s, opacity .2s; }
-  .btn:active { transform:scale(.97); }
-  .btn:disabled { opacity:.4; }
-  .btn.primary { background:linear-gradient(135deg, var(--primary), var(--primary-dark)); color:#fff; box-shadow:0 6px 18px rgba(246,168,33,.35); }
-  .btn.ghost { background:#fff; color:var(--ink); border:1px solid var(--line); }
-  .btn.secondary { background:var(--ink); color:#fff; }
+  .review-text { font-size:15px; line-height:1.85; color:#333; white-space:pre-wrap; }
+  .meta-row { display:flex; align-items:center; gap:8px; margin-top:12px; font-size:12px; color:#999; }
+  .meta-row .tag { background:#fff6e5; color:#d98f16; padding:3px 10px; border-radius:12px; font-weight:600; }
 
-  .card { background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); }
-  .hint { font-size:12px; color:var(--gray-9); }
-  .content { flex:1; padding:4px 16px 20px; }
+  .img-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+  .img-box { position:relative; aspect-ratio:1; border-radius:10px; overflow:hidden; background:#eee; }
+  .img-box img { width:100%; height:100%; object-fit:cover; display:block; }
+  .save-hint { font-size:12px; color:#999; text-align:center; margin-top:12px; line-height:1.6; }
+  .save-hint b { color:#d98f16; }
 
-  /* 房型卡片 */
-  .room-card { margin-bottom:16px; overflow:hidden; }
-  .room-head { display:flex; align-items:center; gap:12px; padding:16px; cursor:pointer; }
-  .room-emoji { width:46px; height:46px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0; }
-  .room-info { flex:1; }
-  .room-name { font-size:16px; font-weight:700; }
-  .room-sub { font-size:12px; color:var(--gray-9); margin-top:2px; }
-  .room-check { width:24px; height:24px; border-radius:50%; border:2px solid #ddd; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:14px; color:#fff; }
-  .room-card.selected .room-check { background:var(--primary); border-color:var(--primary); }
-  .room-card.selected { border:2px solid var(--primary); box-shadow:0 4px 16px rgba(246,168,33,.18); }
+  .btn { width:100%; border:none; border-radius:24px; padding:14px; font-size:15px; font-weight:700; cursor:pointer; text-align:center; margin-bottom:10px; }
+  .btn.primary { background:linear-gradient(135deg,#f6a821,#d98f16); color:#fff; box-shadow:0 6px 18px rgba(246,168,33,.35); }
+  .btn.ghost { background:#fff; color:#1a1a1a; border:1px solid #eee; }
+  .btn.copy { background:linear-gradient(135deg,#1a1a1a,#333); color:#fff; }
 
-  /* 房型缩略图 */
-  .room-thumbs { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; padding:0 16px 14px; }
-  .tthumb { position:relative; aspect-ratio:1; border-radius:10px; overflow:hidden; background:#eee; }
-  .tthumb img { width:100%; height:100%; object-fit:cover; display:block; }
-  .tthumb .del { position:absolute; top:4px; right:4px; width:20px; height:20px; border-radius:50%; background:rgba(0,0,0,.55); color:#fff; border:none; font-size:12px; line-height:1; cursor:pointer; }
-  .tthumb .idx { position:absolute; left:4px; top:4px; background:rgba(0,0,0,.55); color:#fff; font-size:10px; padding:1px 5px; border-radius:6px; }
-  .tthumb.add { border:1.5px dashed #ccc; background:#fafafa; display:flex; align-items:center; justify-content:center; color:var(--gray-9); font-size:12px; cursor:pointer; }
-  .tthumb.add .plus { font-size:24px; color:#ccc; line-height:1; }
+  /* 平台跳转 */
+  .platforms { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:14px; }
+  .pf { background:#fff; border:1px solid #eee; border-radius:14px; padding:14px 6px; text-align:center; cursor:pointer; transition:transform .1s; }
+  .pf:active { transform:scale(.95); }
+  .pf .icon { width:42px; height:42px; border-radius:12px; margin:0 auto 8px; display:flex; align-items:center; justify-content:center; font-size:22px; }
+  .pf .name { font-size:13px; font-weight:700; }
+  .pf .sub { font-size:10px; color:#999; margin-top:2px; }
 
-  /* 空房型提示 */
-  .room-empty { text-align:center; color:var(--gray-9); font-size:13px; padding:20px; border:1.5px dashed #eee; border-radius:12px; margin:0 16px 14px; cursor:pointer; }
-  .room-empty .demo-btn { display:inline-block; margin-top:10px; background:var(--primary-soft); color:var(--primary-dark); padding:6px 14px; border-radius:16px; font-size:12px; font-weight:600; }
-  .demo-hint { display:flex; align-items:center; gap:6px; background:#fff8e1; border:1px solid #ffe082; color:#8b6914; font-size:12px; padding:9px 12px; border-radius:10px; margin-bottom:14px; line-height:1.5; }
-
-  /* 生成中 */
-  .gen-wrap { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:30px 24px; text-align:center; }
-  .gen-orbit { position:relative; width:140px; height:140px; margin-bottom:30px; }
-  .gen-orbit .core { position:absolute; inset:32px; border-radius:50%; background:linear-gradient(135deg, var(--primary), var(--primary-dark)); display:flex; align-items:center; justify-content:center; box-shadow:0 8px 24px rgba(246,168,33,.4); animation:pulse 1.6s infinite; }
-  .gen-orbit .core svg { width:42px; height:42px; stroke:#fff; }
-  .gen-orbit .ring { position:absolute; inset:0; border:3px solid var(--primary-soft); border-top-color:var(--primary); border-radius:50%; animation:spin 1.2s linear infinite; }
-  .gen-orbit .ring.r2 { inset:8px; animation-duration:1.8s; animation-direction:reverse; opacity:.7; }
-  .gen-orbit .ring.r3 { inset:16px; animation-duration:2.4s; opacity:.4; }
-  @keyframes spin { to{ transform:rotate(360deg);} }
-  @keyframes pulse { 0%,100%{transform:scale(1);} 50%{transform:scale(1.06);} }
-  .gen-progress { width:220px; height:6px; background:#eee; border-radius:3px; overflow:hidden; margin-bottom:18px; }
-  .gen-progress .bar { height:100%; width:0; background:linear-gradient(90deg, var(--primary), var(--primary-dark)); border-radius:3px; transition:width .3s; }
-  .gen-status { font-size:16px; font-weight:600; margin-bottom:6px; }
-  .gen-step { font-size:13px; color:var(--gray-9); min-height:18px; }
-  .gen-room { display:inline-flex; align-items:center; gap:6px; background:var(--primary-soft); color:var(--primary-dark); padding:6px 14px; border-radius:20px; font-size:13px; font-weight:600; margin-bottom:20px; }
-  .gen-picked { display:flex; gap:8px; margin-bottom:24px; }
-  .gen-picked img { width:54px; height:54px; border-radius:10px; object-fit:cover; border:2px solid #fff; box-shadow:0 2px 8px rgba(0,0,0,.12); }
-
-  /* 结果页 */
-  .result-head { display:flex; align-items:center; gap:14px; padding:16px; margin-bottom:14px; }
-  .result-head .mini-imgs { display:flex; }
-  .result-head .mini-imgs img { width:44px; height:44px; border-radius:8px; object-fit:cover; border:2px solid #fff; margin-right:-10px; box-shadow:0 1px 4px rgba(0,0,0,.15); }
-  .result-head .meta { flex:1; }
-  .result-head .meta .t { font-size:15px; font-weight:700; }
-  .result-head .meta .s { font-size:12px; color:var(--gray-9); margin-top:2px; }
-  .score { font-size:24px; font-weight:800; color:var(--primary); }
-  .score .sub { font-size:12px; color:var(--gray-9); font-weight:500; }
-
-  .style-switch { display:flex; gap:8px; padding:4px 16px 12px; }
-  .style-switch .pill { padding:7px 14px; border-radius:18px; background:#fff; border:1.5px solid var(--line); font-size:13px; cursor:pointer; }
-  .style-switch .pill.active { background:var(--primary-soft); border-color:var(--primary); color:var(--primary-dark); font-weight:600; }
-
-  .review-list { padding:0 16px 20px; display:flex; flex-direction:column; gap:12px; }
-  .r-imgs { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; padding:6px 16px 0; }
-  .r-img { aspect-ratio:1; border-radius:8px; overflow:hidden; background:#eee; }
-  .r-img img { width:100%; height:100%; object-fit:cover; display:block; }
-  .qr-row { display:flex; align-items:center; gap:14px; padding:12px 16px; background:#fafafa; border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
-  .qr-box { width:120px; height:120px; background:#fff; border:1px solid var(--line); border-radius:10px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; overflow:hidden; }
-  .card-qr { line-height:0; }
-  .qr-tip { flex:1; }
-  .qr-tip-title { font-size:13px; font-weight:600; color:#1a1a1a; margin-bottom:4px; }
-  .qr-tip .hint { line-height:1.6; }
-  .remain { display:flex; align-items:center; gap:8px; background:#f0faf0; border:1px solid #cdeccd; color:#2e7d32; font-size:12px; padding:9px 12px; border-radius:10px; }
-  .remain.exhausted { background:#fff6e5; border-color:#ffe0a3; color:#b26a00; }
-  .remain .r-btn { margin-left:auto; }
-  .review-card { border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; background:#fff; }
-  .review-card .r-top { display:flex; align-items:center; gap:10px; padding:14px 16px 6px; }
-  .review-card .r-avatar { width:32px; height:32px; border-radius:50%; background:var(--primary-soft); display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
-  .review-card .r-name { font-size:13px; font-weight:600; flex:1; }
-  .review-card .stars { color:var(--primary); font-size:13px; letter-spacing:1px; }
-  .review-card .r-body { padding:6px 16px 12px; font-size:14px; line-height:1.75; color:#333; white-space:pre-wrap; }
-  .review-card .r-foot { display:flex; align-items:center; justify-content:space-between; padding:10px 16px; border-top:1px solid var(--line); font-size:12px; color:var(--gray-9); }
-  .review-card .r-actions { display:flex; gap:6px; }
-  .r-btn { border:none; background:var(--primary-soft); color:var(--primary-dark); padding:6px 12px; border-radius:14px; font-size:12px; cursor:pointer; font-weight:600; }
-  .r-btn:active { transform:scale(.94); }
-  .r-btn.dark { background:var(--ink); color:#fff; }
-
-  .toast { position:fixed; left:50%; bottom:120px; transform:translateX(-50%) translateY(20px); background:rgba(0,0,0,.82); color:#fff; padding:10px 20px; border-radius:20px; font-size:14px; opacity:0; transition:all .3s; pointer-events:none; z-index:999; max-width:80%; text-align:center; }
+  .footer { text-align:center; font-size:11px; color:#bbb; padding:10px 20px 24px; }
+  .toast { position:fixed; left:50%; bottom:100px; transform:translateX(-50%) translateY(20px); background:rgba(0,0,0,.82); color:#fff; padding:10px 20px; border-radius:20px; font-size:14px; opacity:0; transition:all .3s; pointer-events:none; z-index:999; max-width:85%; text-align:center; }
   .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
-
-  .lib-empty { text-align:center; padding:60px 30px; color:var(--gray-9); }
-  .lib-empty .emoji { font-size:48px; margin-bottom:12px; opacity:.6; }
-  .lib-item { padding:14px 16px; margin-bottom:12px; }
-  .lib-item .time { font-size:12px; color:var(--gray-9); margin-bottom:8px; display:flex; justify-content:space-between; }
-  .lib-item .txt { font-size:13px; line-height:1.7; color:#333; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
-  .lib-item .txt.full { -webkit-line-clamp:unset; display:block; }
-  .lib-item .lib-act { display:flex; gap:8px; margin-top:10px; }
-  .lib-qr { display:flex; align-items:center; gap:12px; margin-top:12px; padding-top:12px; border-top:1px dashed var(--line); }
-  .lib-qr .qr-box { width:165px; height:165px; background:#fff; border:1px solid var(--line); border-radius:10px; display:flex; align-items:center; justify-content:center; cursor:pointer; overflow:hidden; padding:6px; flex-shrink:0; }
-  .lib-qr .qr-tip { font-size:12px; color:var(--gray-9); line-height:1.6; }
-  .lib-imgs { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:10px; }
-  .lib-img { aspect-ratio:1; border-radius:8px; overflow:hidden; background:#eee; }
-  .lib-img img { width:100%; height:100%; object-fit:cover; display:block; }
-  .lib-group { margin-bottom:16px; }
-  .lib-group-head { display:flex; align-items:center; justify-content:space-between; padding:10px 4px; font-size:15px; font-weight:700; }
-
-  /* 二维码弹窗 */
-  .modal-mask { position:fixed; inset:0; background:rgba(0,0,0,.55); display:none; align-items:center; justify-content:center; z-index:200; padding:24px; }
-  .modal-mask.show { display:flex; }
-  .modal { background:#fff; border-radius:18px; padding:24px 22px; width:100%; max-width:320px; text-align:center; }
-  .modal .m-title { font-size:16px; font-weight:700; margin-bottom:4px; }
-  .modal .m-sub { font-size:12px; color:var(--gray-9); margin-bottom:16px; }
-  .qr-box { background:#fff; padding:12px; border:1px solid var(--line); border-radius:12px; display:inline-block; margin-bottom:14px; }
-  #bigQRBox { display:flex; align-items:center; justify-content:center; }
-  .modal .m-tip { font-size:12px; color:var(--gray-6); line-height:1.6; margin-bottom:16px; }
-  .modal .m-close { width:100%; border:none; background:var(--ink); color:#fff; padding:12px; border-radius:22px; font-size:14px; font-weight:600; cursor:pointer; }
-  .batch-options { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:14px; }
-  .batch-opt { border:1.5px solid var(--line); background:#fafafa; border-radius:12px; padding:14px 6px; text-align:center; cursor:pointer; transition:all .15s; }
-  .batch-opt:active { transform:scale(.95); }
-  .batch-opt .num { font-size:20px; font-weight:800; color:var(--ink); }
-  .batch-opt .lbl { font-size:11px; color:var(--gray-9); margin-top:4px; }
-  .batch-opt.disabled { opacity:.35; pointer-events:none; }
 </style>
 </head>
 <body>
 
-<!-- ============ 房型图库页（主界面） ============ -->
-<section id="page-upload" class="page active">
-  <div class="topbar">
-    <span class="title">房型好评生成器</span>
-    <button class="sub-btn" onclick="goLib()">📚 评价库</button>
+  <div class="banner">
+    <div class="brand">✧ 泊歇酒店 客户好评 ✧</div>
+    <div class="room" id="roomName">酒店房型</div>
+    <div class="stars" id="stars">★★★★★</div>
   </div>
 
-  <div class="content" id="roomList"></div>
-
-  <div class="footer-bar">
-    <button class="btn ghost" id="batchBtn" onclick="openBatchModal()">批量生成</button>
-    <button class="btn primary" id="genBtn" onclick="startGenerate()">请先选择房型</button>
-  </div>
-</section>
-
-<!-- 批量数量选择弹窗 -->
-<div class="modal-mask" id="batchModal">
-  <div class="modal">
-    <div class="m-title">批量生成好评</div>
-    <div class="m-sub" id="batchSub">选择要生成的数量</div>
-    <div class="batch-options" id="batchOptions"></div>
-    <div class="m-tip" id="batchTip">每条好评含不同文字 + 3 张不重复图片</div>
-    <button class="m-close" onclick="closeBatchModal()">取消</button>
-  </div>
-</div>
-
-<!-- ============ 生成中页 ============ -->
-<section id="page-generating" class="page">
-  <div class="topbar has-back">
-    <button class="back" onclick="backToUpload()">‹</button>
-    <span class="title">AI 生成中</span>
-  </div>
-  <div class="gen-wrap">
-    <div class="gen-room" id="genRoomTag"></div>
-    <div class="gen-picked" id="genPicked"></div>
-    <div class="gen-orbit">
-      <div class="ring"></div>
-      <div class="ring r2"></div>
-      <div class="ring r3"></div>
-      <div class="core">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+  <div class="wrap">
+    <div class="card">
+      <div class="label"><span class="bar"></span>入住体验评价</div>
+      <div class="review-text" id="reviewText">加载中…</div>
+      <div class="meta-row">
+        <span class="tag" id="scoreTag">综合评分 5.0</span>
+        <span id="dateStr"></span>
+      </div>
+      <div style="margin-top:14px;">
+        <button class="btn copy" onclick="copyText()">📋 一键复制好评文字</button>
       </div>
     </div>
-    <div class="gen-progress"><div class="bar" id="genBar"></div></div>
-    <div class="gen-status" id="genStatus">正在读取房型图片</div>
-    <div class="gen-step" id="genStep">从图库中选取图片…</div>
-  </div>
-</section>
 
-<!-- ============ 结果页 ============ -->
-<section id="page-result" class="page">
-  <div class="topbar has-back">
-    <button class="back" onclick="goUpload()">‹</button>
-    <span class="title">生成结果</span>
-  </div>
-
-  <div class="result-head card">
-    <div class="mini-imgs" id="miniImgs"></div>
-    <div class="meta">
-      <div class="t" id="resTitle">酒店好评</div>
-      <div class="s" id="resMeta">基于图库任选 3 张生成</div>
+    <div class="card">
+      <div class="label"><span class="bar"></span>现场实拍</div>
+      <div class="img-grid" id="imgGrid"></div>
+      <div class="save-hint">💡 <b>长按图片</b>即可保存到手机相册<br>或点击下方按钮一键保存全部图片</div>
+      <div style="margin-top:12px;">
+        <button class="btn primary" onclick="saveAll()">📥 一键保存全部图片</button>
+      </div>
     </div>
-    <div class="score">5.0<span class="sub"> 分</span></div>
+
+    <div class="card">
+      <div class="label"><span class="bar"></span>前往平台下单 / 发布</div>
+      <div class="platforms" id="platforms">
+        <div class="pf" onclick="jump('meituan')">
+          <div class="icon" style="background:#ffe8e0;">🛵</div>
+          <div class="name">美团</div>
+          <div class="sub">去美团查看</div>
+        </div>
+        <div class="pf" onclick="jump('douyin')">
+          <div class="icon" style="background:#1a1a1a;">🎵</div>
+          <div class="name">抖音</div>
+          <div class="sub">去抖音看看</div>
+        </div>
+        <div class="pf" onclick="jump('ctrip')">
+          <div class="icon" style="background:#dceeff;">✈️</div>
+          <div class="name">携程</div>
+          <div class="sub">去携程预订</div>
+        </div>
+      </div>
+      <div class="save-hint">在微信中点击图标将直接打开对应平台；<br>若已安装 App 也可长按复制链接后在 App 内打开</div>
+    </div>
   </div>
 
-  <div class="style-switch" id="styleSwitch"></div>
-  <div id="remainBar" style="padding:0 16px 12px;"></div>
-  <div class="review-list" id="reviewList"></div>
+  <div class="footer">由 泊歇酒店 好评生成器 分享</div>
+  <div class="toast" id="toast"></div>
 
-  <div class="footer-bar">
-    <button class="btn ghost" onclick="reGenerate()">🔄 重新生成</button>
-    <button class="btn primary" onclick="saveToLib()">⭐ 保存</button>
-  </div>
-</section>
-
-<!-- 二维码弹窗 -->
-<div class="modal-mask" id="qrModal">
-  <div class="modal">
-    <div class="m-title">扫码查看这条好评</div>
-    <div class="m-sub">含评价文字与实拍图片</div>
-    <div class="qr-box"><div id="bigQRBox" style="display:flex;align-items:center;justify-content:center;"></div></div>
-    <div class="m-tip">📱 对方扫码后打开展示页，可查看好评全文与实拍图，并<b>长按图片一键保存到手机</b></div>
-    <button class="m-close" onclick="closeQR()">关闭</button>
-  </div>
-</div>
-
-<!-- ============ 评价库页 ============ -->
-<section id="page-library" class="page">
-  <div class="topbar has-back">
-    <button class="back" onclick="goUpload()">‹</button>
-    <span class="title">我的评价库</span>
-  </div>
-  <div class="content" id="libContent"></div>
-</section>
-
-<!-- 全局隐藏文件输入（按房型动态使用） -->
-<input type="file" id="fileInput" accept="image/*" multiple hidden>
-
-<div class="toast" id="toast"></div>
-
-<script src="lib/qrcode.min.js"></script>
 <script>
-/* ===================== 房型数据 ===================== */
-const ROOMS = [
-  { id:'qingju',    name:'轻居大床房', emoji:'🛏️', desc:'1.8米大床 · 轻简舒适', color:'#ffe8cc', bed:'大床' },
-  { id:'nuanyu',    name:'暖屿大床房', emoji:'🌊', desc:'1.8米大床 · 海景暖调', color:'#d0f0f5', bed:'大床' },
-  { id:'zhenxuan',  name:'臻选大床房', emoji:'✨', desc:'2米豪华大床 · 臻选品质', color:'#f3e8ff', bed:'大床' },
-  { id:'nuanyang',  name:'暖阳双床房', emoji:'🌞', desc:'1.35米双床 · 温馨向阳', color:'#fff3bf', bed:'双床' },
-];
+  // 从 URL 读取分享 ID（share.html#<id>），再通过接口取数据
+  const shareId = location.hash.replace(/^#/, '');
+  let data = null;
 
-const STYLES = [
-  { id:'warm',   label:'温馨',   emoji:'🌤️', desc:'温暖走心、细节动人' },
-  { id:'pro',    label:'专业',   emoji:'📋', desc:'客观中肯、条理清晰' },
-  { id:'vivid',  label:'活泼',   emoji:'🎉', desc:'轻松有趣、感染力强' },
-];
-
-/* ===================== 文案素材库 ===================== */
-// 按房型 bed 类型（大床/双床）+ 通用场景组织（已扩充，支持批量不重复）
-const BED_LIB = {
-  大床: {
-    open: ['床品是星级酒店同款，躺上去包裹感十足', '大床又大又软，一个人躺可以随意翻滚', '床垫软硬适中，枕头也给了高低两款选择', '卧室的灯带和暖光设计很温馨，睡眠氛围感拉满', '床垫是乳胶加记忆棉的，一躺下疲惫感就散了', '房间整体色调让人放松，躺下的瞬间压力就卸了一半', '大床视野开阔，一进门就能看到窗外的好景致', '枕头蓬松又有支撑力，怎么躺都舒服', '床单被套都是亲肤材质，贴脸睡也不扎', '卧室空间规划得很合理，床的体验感尤其出色'],
-    mid:  ['被子蓬松轻盈，盖着像被云朵抱住', '睡前还有服务人员贴心送来助眠饮品', '房间隔音出色，一觉睡到自然醒', '枕头高度刚刚好，颈椎完全没有压力', '床边就有快速充电口，躺床上玩手机也不愁', '床头灯可以调亮度，睡前看书很舒服', '空气净化器开着，房间一直清清爽爽', '空调温度控制很精准，半夜不会被热醒或冻醒', '窗帘是电动遮光的，拉上后屋里瞬间安静下来', '地面和床品都一尘不染，住着很安心', '房间配了舒适的拖鞋和浴袍，细节很到位', '无线网络信号稳定，刷视频玩游戏都不卡'],
-    close:['这张床我给满分，睡得比在家还香', '光是这张床就值得反复入住', '躺下去的那一瞬间，就觉得这房订对了', '这一觉睡得踏实，第二天精神满满', '住过这么多酒店，这家的床是真的顶', '就冲这个睡眠体验，必须给好评'],
-    proMid:['床品布草符合高端标准，更换及时、整洁如新', '客房内灯光、空调均可智能调节，体验舒适', '睡眠环境安静，隔音处理到位', '床垫支撑性与舒适度平衡得当，符合人体工学', '布草织物密度高、触感柔软，品质有保障', '客房清洁消杀规范，入住卫生有保障', '窗帘遮光等级高，适合不同作息需求的住客', '床品更新频率高，长期住也能保持崭新体验'],
-    proClose:['床品与睡眠体验均属上乘，值得推荐', '从床品到服务细节，都体现着高标准的用心', '硬件配置与软性服务兼备，是品质之选', '睡眠质量有保障，适合重视休息质量的旅客', '整体体验稳定，值得作为长期入住的优先选择'],
-    vivid:['这床一躺上去，我的灵魂就被封印住了', '床软到我怀疑自己在云上睡觉', '躺下那一刻，心里的疲惫全被弹走了', '这枕头舒服到想把它抱回家', '晚上九点上床，一觉直接睡到闹钟响', '这床就是我的快乐老家，太爱了'],
-  },
-  双床: {
-    open: ['两张床都铺得很整齐，床品干净又舒适', '双床房空间很宽敞，两张床互不打扰', '床垫硬度适中，两张床的体验保持一致', '房间的采光很好，两张床都晒得到阳光', '床头都配了独立阅读灯和插座，很方便', '双床房的设计很贴心，空间利用率很高', '两张床之间还有小隔断，私密性不错', '一进门就感觉房间通透，两张床都显得很敞亮', '床品看着就很干净，躺上去更舒服', '房间布局合理，两张床都不拥挤'],
-    mid:  ['床和床之间距离得当，既独立又不显得局促', '每张床都准备了两种枕头，按喜好自选', '被子蓬松，盖着特别舒服', '房间隔音好，两人住也互不影响', '窗帘遮光性好，睡懒觉毫无压力', '床头灯和充电口都有，各自用着方便', '房间里小茶几和椅子齐全，休息办公都合适', '空调出风口避开了床头，睡觉不会被吹到', '两张床的被子厚度一样，体感舒适', '房间安静，两个人都能睡个好觉'],
-    close:['双床房住得很舒服，两人出行很合适', '两张床的配置都让人满意', '无论是商务同行还是家庭出行，都很合适', '这间双床房性价比很高，住得舒心', '朋友/家人住都很合适，睡得都踏实', '双床房也保持了高品质，很加分'],
-    proMid:['双床布局合理，动线清晰，入住体验佳', '两床床品均保持统一高水准，维护到位', '房间空间利用率高，适合多人入住', '双床间距设置合理，兼顾独立性与交流便利', '各床均配置独立照明与电源，细节到位', '房间收纳空间充足，多人行李也能从容摆放', '床品干净整洁，床垫支撑均匀，睡眠体验好', '公共区域与房间隔音处理良好，互不干扰'],
-    proClose:['双床房配置完善，性价比较高，值得选择', '床品与服务都维持在稳定水准，可以放心', '多人入住的体验同样出色，值得推荐', '从空间到床品均体现出用心，是可靠之选', '兼顾舒适与实用，适合多种出行场景'],
-    vivid:['双床房很懂我，和闺蜜一人一张床爽歪歪', '两张床都舒服，谁也不用抢', '跟同事出差订这个房，睡觉互不打扰太舒服了', '两张床都软fufu的，躺哪张都不亏', '这双床房我愿称之为出差神器', '带家人来住，爸妈都说床舒服'],
-  },
-};
-
-// 房型专属开场（按房型名，已扩充）
-const ROOM_OPEN = {
-  qingju:   ['轻居大床房的整体风格轻简又高级，一进门就很放松', '轻居大床房虽然走简约风，但该有的配置一个不少', '轻居大床房的配色看着就舒服，住起来更舒服', '轻居大床房把简约和舒适平衡得刚刚好'],
-  nuanyu:   ['暖屿大床房的暖调灯光一开，整个人都松弛下来', '暖屿大床房有种度假的氛围，仿佛住在海边的小屋', '暖屿大床房的色调特别治愈，拍照都好看', '暖屿大床房一进门就让人心情变好'],
-  zhenxuan: ['臻选大床房的品质感一进门就能感受到，处处是细节', '臻选大床房的床品和家具都透着一股高级感', '臻选大床房从材质到布置都很有格调', '臻选大床房把精致和舒适做到了极致'],
-  nuanyang: ['暖阳双床房下午的阳光正好洒进来，房间暖洋洋的', '暖阳双床房光线通透，住着让人心情舒畅', '暖阳双床房采光特别好，早上被阳光叫醒的感觉太棒了', '暖阳双床房的通透感让人待着就不想走'],
-};
-
-/* ===================== 状态 ===================== */
-let state = {
-  rooms: { qingju:[], nuanyu:[], zhenxuan:[], nuanyang:[] }, // 每房型图片数组
-  selected: null,     // 当前选中的房型 id
-  picked3: [],        // 本次生成选中的3张
-  style: 'warm',
-  currentResults: [],
-  currentStyle: 'warm',
-  library: [],
-  pendingRoom: null,  // 等待上传的房型
-  used: {},           // 每房型已用句子：{ roomId: { open:Set, mid:Set, close:Set, ... } }
-  batchMode: false,   // 是否批量生成模式
-};
-
-const USED_KEY = 'room_reviews_used';
-
-// 加载/保存已用记录
-function loadUsed(){
-  try{ const s=localStorage.getItem(USED_KEY); if(s) state.used=JSON.parse(s); }catch(e){ state.used={}; }
-  // 确保每个房型都有结构
-  ROOMS.forEach(r=>{
-    if(!state.used[r.id]) state.used[r.id]={};
-  });
-}
-function saveUsed(){ localStorage.setItem(USED_KEY, JSON.stringify(state.used)); }
-// 标记某房型的某些句子为已用
-function markUsed(roomId, sentences){
-  const u = state.used[roomId];
-  sentences.forEach(s=>{
-    const t = s.trim();
-    if(t) u[t] = 1;
-  });
-  saveUsed();
-}
-// 判断句子是否已用
-function isUsed(roomId, sentence){
-  return state.used[roomId] && state.used[roomId][sentence.trim()];
-}
-// 获取某类别未用过的句子池
-function avail(lib, roomId, cat){
-  const pool = lib[cat] || [];
-  const left = pool.filter(s=>!isUsed(roomId, s));
-  return left.length ? left : pool; // 素材用尽时回退到全量
-}
-// 某房型全部素材是否用尽
-function isExhausted(roomId){
-  const room = ROOMS.find(r=>r.id===roomId);
-  const lib = BED_LIB[room.bed];
-  const allCats = ['open','mid','close','proMid','proClose','vivid'];
-  return allCats.every(cat=>{
-    const pool = lib[cat];
-    return pool.length>0 && pool.every(s=>isUsed(roomId, s));
-  });
-}
-// 重置某房型已用记录
-function resetUsed(roomId){
-  state.used[roomId] = {};
-  saveUsed();
-}
-
-/* ===================== 图片工具 ===================== */
-const SVG_BASE = `data:image/svg+xml;utf8,`;
-function svgPlace(text, color){
-  const c = encodeURIComponent(color||'#f0e4c8');
-  return SVG_BASE + encodeURIComponent(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="${c}"/><text x="100" y="115" font-size="20" text-anchor="middle">${text}</text></svg>`
-  );
-}
-
-/* ===================== 房型列表渲染 ===================== */
-function renderRooms(){
-  const wrap = document.getElementById('roomList');
-  const demoBanner = `<div class="demo-hint">💡 若无法弹出文件选择框，可点击各房型下的「填入示例图」快速体验；正式使用请用手机/电脑浏览器上传真实照片。</div>`;
-  wrap.innerHTML = demoBanner + ROOMS.map(r=>{
-    const imgs = state.rooms[r.id];
-    const sel = state.selected===r.id;
-    // 网格：显示全部已存图片（最多9张），不足3格时补充添加格
-    let thumbs = imgs.map((img,i)=>`
-      <div class="tthumb"><img src="${img}" alt=""><span class="idx">${i+1}</span><button class="del" onclick="event.stopPropagation();removeImg('${r.id}',${i})">×</button></div>`).join('');
-    if(imgs.length < 9){
-      thumbs += `<div class="tthumb add" onclick="event.stopPropagation();uploadFor('${r.id}')"><span class="plus">+</span></div>`;
+  function loadData(){
+    if(!shareId){
+      document.getElementById('reviewText').textContent = '链接无效或已过期，请重新扫码。';
+      document.getElementById('roomName').textContent = '未知房型';
+      return;
     }
-    const body = `<div class="room-thumbs">${thumbs}</div>`;
-
-    return `<div class="card room-card ${sel?'selected':''}" onclick="selectRoom('${r.id}')">
-      <div class="room-head">
-        <div class="room-emoji" style="background:${r.color}">${r.emoji}</div>
-        <div class="room-info">
-          <div class="room-name">${r.name}</div>
-          <div class="room-sub">${r.desc} · 已存 ${imgs.length} 张</div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
-          <span class="demo-btn" style="font-size:11px;" onclick="event.stopPropagation();fillDemo('${r.id}')">填示例</span>
-          <div class="room-check">${sel?'✓':''}</div>
-        </div>
-      </div>
-      ${body}
-    </div>`;
-  }).join('');
-  updateGenBtn();
-}
-
-// 为指定房型填充示例图（3张，模拟真实上传，避免 iframe 拦截文件选择）
-function fillDemo(roomId){
-  const room = ROOMS.find(r=>r.id===roomId);
-  if(state.rooms[roomId].length>=9){ toast('该房型已达上限 9 张'); return; }
-  const colors = ['#f6a821','#e74c3c','#27ae60','#2980b9','#8e44ad','#d35400','#16a085','#c0392b','#2c3e50'];
-  const n = 9 - state.rooms[roomId].length;
-  for(let i=0;i<n;i++){
-    state.rooms[roomId].push(svgPlace(`${room.emoji} ${room.name} 图${state.rooms[roomId].length+1}`, colors[state.rooms[roomId].length % colors.length]));
-  }
-  renderRooms();
-  toast(`✅ 已为「${room.name}」填入示例图，共 ${state.rooms[roomId].length} 张`);
-}
-
-function selectRoom(id){
-  state.selected = state.selected===id ? null : id;
-  renderRooms();
-}
-
-function uploadFor(roomId){
-  state.pendingRoom = roomId;
-  const fi = document.getElementById('fileInput');
-  fi.onchange = e => {
-    const files = Array.from(e.target.files||[]);
-    files.forEach(f=>{
-      const reader = new FileReader();
-      reader.onload = ev => {
-        state.rooms[state.pendingRoom].push(ev.target.result);
-        renderRooms();
-      };
-      reader.readAsDataURL(f);
-    });
-    e.target.value='';
-  };
-  fi.click();
-}
-
-function removeImg(roomId, idx){
-  state.rooms[roomId].splice(idx,1);
-  renderRooms();
-}
-
-/* ===================== 生成按钮 ===================== */
-function updateGenBtn(){
-  const btn = document.getElementById('genBtn');
-  const batchBtn = document.getElementById('batchBtn');
-  const room = state.selected;
-  const count = room ? state.rooms[room].length : 0;
-  if(!room){
-    btn.disabled = true; btn.textContent = '请先选择房型';
-    if(batchBtn){ batchBtn.disabled = true; }
-  } else if(count < 3){
-    btn.disabled = true; btn.textContent = `${nameOf(room)} 还需 ${3-count} 张图`;
-    if(batchBtn){ batchBtn.disabled = true; }
-  } else {
-    btn.disabled = false; btn.textContent = `从 ${nameOf(room)} 选3张生成 ✨`;
-    if(batchBtn){ batchBtn.disabled = false; }
-  }
-}
-function nameOf(id){ const r=ROOMS.find(x=>x.id===id); return r?r.name:''; }
-
-/* ===================== 页面切换 ===================== */
-function showPage(id){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-  window.scrollTo(0,0);
-}
-function goUpload(){ state.batchMode=false; showPage('page-upload'); renderRooms(); }
-function backToUpload(){ state.batchMode=false; showPage('page-upload'); }
-
-/* ===================== 生成逻辑 ===================== */
-function rand(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
-function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
-function shuffle(arr){ const a=[...arr]; for(let i=a.length-1;i>0;i--){const j=rand(0,i);[a[i],a[j]]=[a[j],a[i]];} return a; }
-function pick2(arr,n){ const out=[]; const pool=[...arr]; while(n--&&pool.length){ out.push(pool.splice(rand(0,pool.length-1),1)[0]); } return out; }
-
-// 生成一条好评，返回 { text, used[] }；used 是实际用到的模板句子单元
-// blocked 为本轮已占用的句子（避免同轮3条重复）
-function composeReview(style, roomId, blocked){
-  const room = ROOMS.find(r=>r.id===roomId);
-  const lib = BED_LIB[room.bed];
-  const usePro = style==='pro';
-  const useVivid = style==='vivid';
-  const used = [];
-
-  // 选句：从可用池中取，排除全局已用 + 本轮已占用；尽量保证不重复
-  function choose(pool){
-    const global = pool.filter(s=> !isUsed(roomId,s) && !blocked.has(s));
-    const round = global.length ? global : pool.filter(s=>!blocked.has(s));
-    const final = round.length ? round : pool; // 完全用尽时兜底
-    const s = pick(final);
-    used.push(s);
-    blocked.add(s);
-    return s;
-  }
-
-  const open = choose((ROOM_OPEN[roomId]||[]).concat(lib.open));
-  const midN = usePro ? 1 : rand(1,2);
-  const mids = [];
-  for(let i=0;i<midN;i++){
-    mids.push(choose(usePro ? lib.proMid : lib.mid));
-  }
-  const closeCat = usePro ? 'proClose' : useVivid ? (Math.random()>0.5?'vivid':'close') : 'close';
-  const close = choose(lib[closeCat]);
-  return { text: `${open}，${mids.join('，')}。${close}！`, used };
-}
-
-// 生成一组（3种风格），3条之间互不重复，且排除全局已用
-function generateBatch(roomId){
-  const blocked = new Set();
-  const results = STYLES.map(s=>{
-    const { text, used } = composeReview(s.id, roomId, blocked);
-    return { text, style:s.id, used };
-  });
-  // 统一标记本轮所有用到的句子为已用（持久化）
-  const allUsed = [];
-  results.forEach(r=>allUsed.push(...r.used));
-  markUsed(roomId, allUsed);
-  return results;
-}
-
-// 批量生成 N 条好评：每条不同3张图、文字跨条不重复
-function generateBatchReviews(roomId, count){
-  const room = ROOMS.find(r=>r.id===roomId);
-  const pool = [...state.rooms[roomId]];
-  if(pool.length < count*3){ toast('图片不足，需 '+(count*3)+' 张'); return null; }
-
-  // 打乱后按每组3张分组，保证组间图片不重复
-  const shuffled = shuffle(pool);
-  const groups = [];
-  for(let i=0;i<count;i++){ groups.push(shuffled.slice(i*3, i*3+3)); }
-
-  // 生成 count 条不重复好评（风格循环交替，共享 blocked 保证跨条不重复）
-  const blocked = new Set();
-  const results = groups.map((imgs,i)=>{
-    const style = STYLES[i % STYLES.length].id;
-    const { text, used } = composeReview(style, roomId, blocked);
-    return { text, style, used, images: imgs };
-  });
-  // 标记所有用到的句子为已用
-  const allUsed = [];
-  results.forEach(r=>allUsed.push(...r.used));
-  markUsed(roomId, allUsed);
-  return results;
-}
-
-/* ============ 批量生成 ============ */
-function openBatchModal(){
-  const room = state.selected;
-  if(!room){ toast('请先选择房型'); return; }
-  const total = state.rooms[room].length;
-  if(total < 3){ toast('该房型至少需要 3 张图片'); return; }
-  const max = Math.max(1, Math.floor(total/3));
-  const opts = [1,2,3,4,5].filter(n=>n<=max);
-  if(!opts.length) opts.push(1);
-  const box = document.getElementById('batchOptions');
-  box.innerHTML = opts.map(n=>`<div class="batch-opt" onclick="doBatchGenerate(${n})"><div class="num">${n}</div><div class="lbl">条</div></div>`).join('');
-  document.getElementById('batchSub').textContent = `「${nameOf(room)}」图库 ${total} 张，最多可生成 ${max} 条`;
-  document.getElementById('batchTip').textContent = `每条好评含不同文字 + 3 张不重复图片，好评内容不重复`;
-  document.getElementById('batchModal').classList.add('show');
-}
-function closeBatchModal(){ document.getElementById('batchModal').classList.remove('show'); }
-function doBatchGenerate(n){
-  closeBatchModal();
-  const room = state.selected;
-  const results = generateBatchReviews(room, n);
-  if(!results) return;
-  state.currentResults = results;
-  state.batchMode = true;
-  showPage('page-generating');
-  // 模拟生成动画
-  let p=0,i=0; const bar=document.getElementById('genBar');
-  const status=document.getElementById('genStatus'); const step=document.getElementById('genStep');
-  const steps=[
-    ['正在批量生成好评',`为 ${nameOf(room)} 生成 ${n} 条…`],
-    ['分配不重复图片','每条 3 张，互不重复…'],
-    ['撰写差异化文案','好评内容不重复…'],
-    ['生成完成','即将展示结果…'],
-  ];
-  const iv=setInterval(()=>{
-    p+=rand(20,28); if(p>=100)p=100; bar.style.width=p+'%';
-    if(i<steps.length){ status.textContent=steps[i][0]; step.textContent=steps[i][1]; i++; }
-    if(p>=100){ clearInterval(iv); setTimeout(showResult,400); }
-  },360);
-}
-
-function startGenerate(){
-  const room = state.selected;
-  if(!room){ toast('请先选择房型'); return; }
-  if(state.rooms[room].length < 3){ toast('该房型至少需要 3 张图片'); return; }
-
-  // 从该房型图库中随机任选 3 张（保证不跨房型）
-  state.picked3 = shuffle(state.rooms[room]).slice(0,3);
-
-  // 生成中页展示
-  document.getElementById('genRoomTag').innerHTML = `${ROOMS.find(r=>r.id===room).emoji} ${nameOf(room)}`;
-  document.getElementById('genPicked').innerHTML = state.picked3.map(src=>`<img src="${src}" alt="">`).join('');
-
-  showPage('page-generating');
-  let p=0; let i=0;
-  const bar=document.getElementById('genBar');
-  const status=document.getElementById('genStatus');
-  const step=document.getElementById('genStep');
-  const steps=[
-    ['正在读取房型图片',`从 ${nameOf(room)} 图库选取 3 张…`],
-    ['识别图片内容','分析房型特色与环境…'],
-    ['匹配房间风格撰写','结合房型特点组织文案…'],
-    ['润色语言表达','打磨文案感染力…'],
-    ['生成多个版本','即将完成…'],
-  ];
-  const iv=setInterval(()=>{
-    p+=rand(15,25); if(p>=100)p=100;
-    bar.style.width=p+'%';
-    if(i<steps.length){ status.textContent=steps[i][0]; step.textContent=steps[i][1]; i++; }
-    if(p>=100){
-      clearInterval(iv);
-      setTimeout(()=>{ status.textContent='生成完成！'; step.textContent='已为您生成多款好评'; setTimeout(showResult,500); },400);
+    // 兼容旧格式：如果 hash 是 base64 JSON 数据则直接解析
+    if(shareId.startsWith('ey')){
+      try{ data = JSON.parse(decodeURIComponent(atob(shareId))); render(); return; }catch(e){}
     }
-  },380);
-}
-
-/* ===================== 结果页 ===================== */
-function showResult(){
-  if(!state.batchMode){
-    state.currentStyle = state.style;
-    state.currentResults = generateBatch(state.selected);
-  }
-  state.compressed = null; // 新批次重置压缩缓存
-  renderResult();
-  showPage('page-result');
-}
-function renderResult(){
-  const room = state.selected;
-  const isBatch = state.batchMode===true;
-  const count = state.currentResults.length;
-  // 头部
-  document.getElementById('miniImgs').innerHTML = (state.currentResults[0].images||state.picked3).slice(0,3).map(src=>`<img src="${src}" alt="" onerror="this.onerror=null;this.style.background='#eee'">`).join('');
-  document.getElementById('resTitle').textContent = isBatch ? `${nameOf(room)} · 批量好评 ${count}条` : `${nameOf(room)} · 好评`;
-  document.getElementById('resMeta').textContent = isBatch ? `每条含不同文字 + 3 张不重复图片` : `从 ${nameOf(room)} 图库任选 3 张生成`;
-
-  // 批量模式隐藏风格切换（已是多种风格）；单条保留
-  const sw=document.getElementById('styleSwitch');
-  if(isBatch){ sw.innerHTML = '<div class="hint" style="padding:2px 4px;">✨ 已生成 '+count+' 条不重复好评，各含 3 张不同图片</div>'; }
-  else {
-    sw.innerHTML = STYLES.map(s=>`<div class="pill ${s.id===state.currentStyle?'active':''}" onclick="switchStyle('${s.id}')">${s.emoji}${s.label}</div>`).join('');
+    fetch('/api/share/' + encodeURIComponent(shareId))
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { data = d; render(); })
+      .catch(() => { data = null; render(); });
   }
 
-  // 素材剩余提示
-  const exhausted = isExhausted(state.selected);
-  const remainBar = document.getElementById('remainBar');
-  if(remainBar){
-    remainBar.innerHTML = exhausted
-      ? `<div class="remain exhausted">⚠️ 该房型的文案素材已用尽，请点击「重置素材」继续生成</div>`
-      : `<div class="remain">✨ 好评不会重复使用，本房型素材仍可继续生成 <button class="r-btn" onclick="resetUsedClick()">重置素材</button></div>`;
-  }
-
-  const list=document.getElementById('reviewList');
-  list.innerHTML = state.currentResults.map((r,i)=>{
-    const s=STYLES.find(x=>x.id===r.style)||STYLES[0];
-    const imgsHtml = (r.images&&r.images.length)
-      ? `<div class="r-imgs">${r.images.map(src=>`<div class="r-img"><img src="${src}" alt="房型图片" onerror="this.style.background='#eee'"></div>`).join('')}</div>`
-      : '';
-    return `<div class="review-card" data-idx="${i}">
-      <div class="r-top">
-        <div class="r-avatar">${s.emoji}</div>
-        <div class="r-name">${isBatch?('好评 '+(i+1)+' · '+s.label):(s.label+'版')}</div>
-        <div class="stars">★★★★★</div>
-      </div>
-      ${imgsHtml}
-      <div class="r-body">${r.text}</div>
-      <div class="qr-row">
-        <div class="qr-box" data-idx="${i}"></div>
-        <div class="qr-tip">
-          <div class="qr-tip-title">📱 扫码查看此好评</div>
-          <div class="hint">含评价文字 + 实拍图片<br>可一键复制、保存图片、跳转平台</div>
-        </div>
-      </div>
-      <div class="r-foot">
-        <span>${r.text.length} 字</span>
-        <div class="r-actions">
-          <button class="r-btn" onclick="copyReview(${i})">复制</button>
-          <button class="r-btn" onclick="editReview(${i})">编辑</button>
-          <button class="r-btn" onclick="useThis(${i})">采用</button>
-        </div>
-      </div>
-    </div>`;
-  }).join('');
-  // 为每条好评自动生成二维码（含文字+图片）
-  list.querySelectorAll('.review-card').forEach(card=>{
-    const idx = card.getAttribute('data-idx');
-    autoQR(card, state.currentResults[idx], 120);
-  });
-}
-function switchStyle(id){ state.currentStyle=id; renderResult(); }
-function copyReview(i){ navigator.clipboard.writeText(state.currentResults[i].text).then(()=>toast('✅ 已复制到剪贴板')).catch(()=>toast('复制失败，请手动长按复制')); }
-function editReview(i){
-  const nt=prompt('编辑好评内容：', state.currentResults[i].text);
-  if(nt!=null&&nt.trim()){ state.currentResults[i].text=nt.trim(); renderResult(); toast('已更新'); }
-}
-function useThis(i){ navigator.clipboard.writeText(state.currentResults[i].text).then(()=>toast('✅ 已复制，可直接粘贴到平台')).catch(()=>toast('复制失败')); }
-function reGenerate(){
-  if(state.batchMode){
-    // 批量模式：重新批量生成
-    state.currentResults = generateBatchReviews(state.selected, state.currentResults.length) || state.currentResults;
-  } else {
-    state.currentResults = generateBatch(state.selected);
-  }
-  state.compressed = null;
-  renderResult();
-  toast('🔄 已重新生成（不会重复用过的句子）');
-}
-function resetUsedClick(){
-  if(!state.selected) return;
-  if(confirm(`确定重置「${nameOf(state.selected)}」的已用素材吗？重置后可重新使用之前用过的句子。`)){
-    resetUsed(state.selected);
-    renderResult();
-    toast('已重置素材');
-  }
-}
-function saveToLib(){
-  const room=state.selected;
-  if(state.batchMode){
-    // 批量模式：保存全部到评价库
-    state.currentResults.forEach(r=>{
-      state.library.unshift({
-        time:new Date().toLocaleString('zh-CN'),
-        text:r.text,
-        room:nameOf(room),
-        roomId: room,
-        images: (r.images||[]).slice(0,3)
-      });
-    });
-    localStorage.setItem('room_reviews_lib', JSON.stringify(state.library));
-    toast(`⭐ 已保存 ${state.currentResults.length} 条好评到评价库`);
-  } else {
-    const best=state.currentResults[0];
-    state.library.unshift({
-      time:new Date().toLocaleString('zh-CN'),
-      text:best.text,
-      room:nameOf(room),
-      roomId: room,
-      images: state.picked3.slice(0,3)
-    });
-    localStorage.setItem('room_reviews_lib', JSON.stringify(state.library));
-    toast('⭐ 已保存到评价库（含文字+图片）');
-  }
-}
-
-/* ===================== 二维码分享（每条好评自动内嵌） ===================== */
-// 本次3张图的压缩结果缓存
-state.compressed = null;
-
-// 获取分享URL（用 item 自己的图片，文字单独POST）
-function getShareUrl(item){
-  const roomId = (item && item.roomId) || state.selected;
-  const imgs = item.images && item.images.length ? item.images : state.picked3;
-  const compress = Promise.all(imgs.slice(0,3).map(src=>compressImage(src, 700, 0.7)));
-  return compress.then(compressed => {
-    const payload = {
-      room: nameOf(roomId),
-      text: item.text,
-      score: 5,
-      images: compressed,
-      time: new Date().toLocaleDateString('zh-CN'),
-    };
-    return fetch('/api/share', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    }).then(r=>r.json()).then(res=> res && res.url ? res.url : null);
-  });
-}
-
-// 用 qrcode-generator 生成标准可扫描的二维码 canvas（整数缩放 + 白边，无失真）
-function buildQR(url, size){
-  const qr = qrcode(0, 'M');
-  qr.addData(url);
-  qr.make();
-  const count = qr.getModuleCount();
-  const scale = Math.max(1, Math.floor(size / count));
-  const pad = scale * 2;               // 四周白边（quiet zone），保证可被扫描识别
-  const px = count * scale + pad * 2;
-  const canvas = document.createElement('canvas');
-  canvas.width = px; canvas.height = px;
-  canvas.style.width = '100%';
-  canvas.style.height = '100%';
-  const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, px, px);
-  ctx.fillStyle = '#000000';
-  for(let r=0;r<count;r++){
-    for(let c=0;c<count;c++){
-      if(qr.isDark(r,c)) ctx.fillRect(c*scale + pad, r*scale + pad, scale, scale);
+  function render(){
+    if(!data){
+      document.getElementById('reviewText').textContent = '链接无效或已过期，请重新扫码。';
+      document.getElementById('roomName').textContent = '未知房型';
+      return;
     }
+    document.getElementById('roomName').textContent = data.room || '酒店房型';
+    document.getElementById('reviewText').textContent = data.text || '';
+    document.getElementById('dateStr').textContent = data.time || '';
+    if(data.score) document.getElementById('scoreTag').textContent = `综合评分 ${data.score}`;
+    const starCount = Math.round(data.score||5);
+    document.getElementById('stars').textContent = '★'.repeat(starCount) + '☆'.repeat(5-starCount);
+    const grid = document.getElementById('imgGrid');
+    const imgs = data.images || [];
+    grid.innerHTML = imgs.map(src=>`<div class="img-box"><img src="${src}" alt="房型实拍"></div>`).join('');
   }
-  return canvas;
-}
 
-// 在指定容器内渲染二维码（小尺寸），点击放大
-function renderQRIn(container, url, size){
-  container.innerHTML = '';
-  const holder = document.createElement('div');
-  holder.className = 'card-qr';
-  holder.setAttribute('data-url', url);
-  holder.style.cursor = 'pointer';
-  holder.title = '点击放大';
-  holder.onclick = ()=>{ enlargeQR(url); };
-  container.appendChild(holder);
-  try{
-    const cv = buildQR(url, size||120);
-    holder.appendChild(cv);
-  }catch(e){
-    container.innerHTML = '<div class="hint" style="font-size:10px;">二维码生成失败</div>';
-  }
-}
-
-// 为某条好评自动生成二维码（含文字+图片分享）
-function autoQR(cardEl, item, qrSize){
-  const qrBox = cardEl.querySelector('.qr-box');
-  if(!qrBox) return;
-  qrBox.innerHTML = '<div class="hint" style="text-align:center;padding:8px;">生成中…</div>';
-  getShareUrl(item).then(url=>{
-    if(url){
-      renderQRIn(qrBox, url, qrSize||90);
+  // 一键复制好评文字
+  function copyText(){
+    if(!data || !data.text){ toast('没有可复制的内容'); return; }
+    const text = `${data.text}\n—— 来自${data.room||'泊歇酒店'}的真实好评`;
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(()=>toast('✅ 好评已复制，可粘贴到任何平台')).catch(()=>fallbackCopy(text));
     } else {
-      qrBox.innerHTML = '<div class="hint" style="text-align:center;padding:8px;">生成失败</div>';
+      fallbackCopy(text);
     }
-  }).catch(()=>{
-    qrBox.innerHTML = '<div class="hint" style="text-align:center;padding:8px;">生成失败</div>';
-  });
-}
-
-// 图片压缩（canvas 缩放 + JPEG）
-function compressImage(dataUrl, maxSize, quality){
-  return new Promise(resolve=>{
-    const img = new Image();
-    img.onload = ()=>{
-      let { width, height } = img;
-      if(width > maxSize || height > maxSize){
-        const scale = maxSize / Math.max(width, height);
-        width = Math.round(width*scale);
-        height = Math.round(height*scale);
-      }
-      const c = document.createElement('canvas');
-      c.width = width; c.height = height;
-      const ctx = c.getContext('2d');
-      ctx.fillStyle = '#fff'; ctx.fillRect(0,0,width,height);
-      ctx.drawImage(img, 0, 0, width, height);
-      resolve(c.toDataURL('image/jpeg', quality));
-    };
-    img.onerror = ()=>{ resolve(dataUrl); }; // 失败则用原图
-    img.src = dataUrl;
-  });
-}
-
-// 弹窗放大查看二维码（点击卡片二维码）
-function enlargeQR(url){
-  bigQRUrl = url;
-  const box = document.getElementById('bigQRBox');
-  box.innerHTML = '';
-  try{ box.appendChild(buildQR(url, 220)); }catch(e){}
-  document.getElementById('qrModal').classList.add('show');
-}
-function showModal(){ document.getElementById('qrModal').classList.add('show'); }
-function closeQR(){ document.getElementById('qrModal').classList.remove('show'); }
-document.getElementById('qrModal').addEventListener('click', e=>{ if(e.target.id==='qrModal') closeQR(); });
-
-/* ===================== 评价库（按房型归类） ===================== */
-function goLib(){
-  loadLib(); showPage('page-library');
-}
-function loadLib(){
-  const s=localStorage.getItem('room_reviews_lib');
-  if(s) state.library=JSON.parse(s);
-  const wrap=document.getElementById('libContent');
-  if(!state.library.length){
-    wrap.innerHTML=`<div class="lib-empty"><div class="emoji">📭</div><div>还没有保存过评价</div><div class="hint" style="margin-top:8px;">生成后点击"保存"即可按房型收藏</div></div>`;
-    return;
   }
-  // 按房型分组
-  const grouped = {};
-  state.library.forEach((item,idx)=>{
-    const roomKey = item.roomId || 'other';
-    if(!grouped[roomKey]) grouped[roomKey] = { items:[], name: item.room || '其他' };
-    grouped[roomKey].items.push({ item, idx });
-  });
+  function fallbackCopy(text){
+    const ta=document.createElement('textarea');
+    ta.value=text; document.body.appendChild(ta);
+    ta.select();
+    try{ document.execCommand('copy'); toast('✅ 好评已复制'); }catch(e){ toast('复制失败，请手动长按选择'); }
+    document.body.removeChild(ta);
+  }
 
-  const roomOrder = ROOMS.map(r=>r.id).filter(id=>grouped[id]);
-  const others = grouped['other'] ? ['other'] : [];
-  const keys = [...roomOrder, ...others];
-
-  wrap.innerHTML = keys.map(k=>{
-    const g = grouped[k];
-    const room = ROOMS.find(r=>r.id===k);
-    const emoji = room ? room.emoji : '🏨';
-    const itemsHtml = g.items.map(({item, idx})=>{
-      const imgs = item.images && item.images.length
-        ? `<div class="lib-imgs">${item.images.map(src=>`<div class="lib-img"><img src="${src}" alt="房型图片" onerror="this.style.background='#eee'"></div>`).join('')}</div>`
-        : '';
-      return `<div class="lib-item card" data-libidx="${idx}">
-        <div class="time"><span>🕐 ${item.time}</span><span class="hint">${item.text.length}字</span></div>
-        <div class="txt" id="libtxt-${idx}">${item.text}</div>
-        ${imgs}
-        <div class="lib-qr" data-idx="${idx}"><div class="qr-box" data-idx="${idx}"></div><span class="qr-tip">扫码查看评论并保存图片</span></div>
-        <div class="lib-act">
-          <button class="r-btn" onclick="copyLib(${idx})">复制</button>
-          <button class="r-btn" onclick="toggleLibFull(${idx})">展开</button>
-          <button class="r-btn dark" onclick="delLib(${idx})">删除</button>
-        </div>
-      </div>`;
-    }).join('');
-    return `<div class="lib-group">
-      <div class="lib-group-head"><span>${emoji} ${g.name}</span><span class="hint">${g.items.length} 条</span></div>
-      ${itemsHtml}
-    </div>`;
-  }).join('');
-  // 渲染完成后，为每条评价自动生成二维码（用各自房型+文字+图片）
-  requestAnimationFrame(()=>{
-    state.library.forEach((item,idx)=>{
-      const card = wrap.querySelector('.lib-item[data-libidx="'+idx+'"]');
-      if(card) autoQR(card, item, 160);
+  // 一键保存全部图片（微信内下载受限，改为引导长按保存）
+  function saveAll(){
+    const imgs=(data&&data.images)||[];
+    if(!imgs.length){ toast('没有可保存的图片'); return; }
+    if(inWeChat){
+      toast('请长按上方图片，选择"保存图片"到手机');
+      return;
+    }
+    let saved=0;
+    imgs.forEach((src,i)=>{
+      const a=document.createElement('a');
+      a.href=src; a.download=`酒店好评图${i+1}.jpg`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      saved++;
     });
-  });
-}
-function copyLib(i){ navigator.clipboard.writeText(state.library[i].text).then(()=>toast('✅ 已复制')).catch(()=>toast('复制失败')); }
-function toggleLibFull(i){ const el=document.getElementById('libtxt-'+i); if(el) el.classList.toggle('full'); }
-function delLib(i){ state.library.splice(i,1); localStorage.setItem('room_reviews_lib',JSON.stringify(state.library)); loadLib(); toast('已删除'); }
+    toast(`✅ 已开始保存 ${saved} 张图片到相册`);
+  }
 
-/* ===================== Toast ===================== */
-let toastTimer;
-function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),1800); }
+  // 平台跳转（微信内直接打开网页版；其他环境尝试 App scheme + 网页兜底）
+  const PLATFORM = {
+    meituan:{ scheme:'imeituan://www.meituan.com', ios:'https://apps.apple.com/cn/app/id423084029', web:'https://www.meituan.com/hotel/' },
+    douyin:{ scheme:'snssdk1128://', ios:'https://apps.apple.com/cn/app/id1142110895', web:'https://www.douyin.com/' },
+    ctrip:{ scheme:'ctrip://', ios:'https://apps.apple.com/cn/app/id260951613', web:'https://m.ctrip.com/webapp/hotel/' },
+  };
+  const PLATFORM_NAMES = { meituan:'美团', douyin:'抖音', ctrip:'携程' };
+  // 是否在微信内
+  const inWeChat = /MicroMessenger/i.test(navigator.userAgent);
 
-/* ===================== 初始化 ===================== */
-if(localStorage.getItem('room_reviews_lib')) state.library=JSON.parse(localStorage.getItem('room_reviews_lib'));
-loadUsed();
-renderRooms();
+  function jump(key){
+    const p=PLATFORM[key];
+    if(!p) return;
+
+    // 微信内：window.open / iframe / location.href 唤起 App 基本都受限，
+    // 直接在当前页面用 location.href 打开网页版，体验最顺滑。
+    if(inWeChat){
+      toast(`正在前往${PLATFORM_NAMES[key]}…`);
+      // 延迟一下让 toast 显示，再跳转
+      setTimeout(()=>{ window.location.href = p.web; }, 300);
+      return;
+    }
+
+    // 非微信环境：优先尝试用 scheme 唤起 App，失败则提示打开网页
+    const start=Date.now();
+    const iframe=document.createElement('iframe');
+    iframe.style.display='none';
+    iframe.src=p.scheme;
+    document.body.appendChild(iframe);
+    setTimeout(()=>{
+      document.body.removeChild(iframe);
+      if(Date.now()-start<800){
+        if(confirm(`未能打开${PLATFORM_NAMES[key]}App，是否打开网页版？`)){
+          window.open(p.web,'_blank');
+        }
+      }
+    },800);
+    try{ window.location.href = p.scheme; }catch(e){}
+  }
+
+  let toastTimer;
+  function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2200); }
+
+  loadData();
 </script>
 </body>
 </html>
