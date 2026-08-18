@@ -96,7 +96,7 @@
           <div class="sub">去携程预订</div>
         </div>
       </div>
-      <div class="save-hint">点击图标会尝试打开对应 App；若未安装将跳转到应用商店</div>
+      <div class="save-hint">在微信中点击图标将直接打开对应平台；<br>若已安装 App 也可长按复制链接后在 App 内打开</div>
     </div>
   </div>
 
@@ -159,10 +159,14 @@
     document.body.removeChild(ta);
   }
 
-  // 一键保存全部图片
+  // 一键保存全部图片（微信内下载受限，改为引导长按保存）
   function saveAll(){
     const imgs=(data&&data.images)||[];
     if(!imgs.length){ toast('没有可保存的图片'); return; }
+    if(inWeChat){
+      toast('请长按上方图片，选择"保存图片"到手机');
+      return;
+    }
     let saved=0;
     imgs.forEach((src,i)=>{
       const a=document.createElement('a');
@@ -173,16 +177,30 @@
     toast(`✅ 已开始保存 ${saved} 张图片到相册`);
   }
 
-  // 平台跳转（App scheme + 网页兜底）
+  // 平台跳转（微信内直接打开网页版；其他环境尝试 App scheme + 网页兜底）
   const PLATFORM = {
     meituan:{ scheme:'imeituan://www.meituan.com', ios:'https://apps.apple.com/cn/app/id423084029', web:'https://www.meituan.com/hotel/' },
     douyin:{ scheme:'snssdk1128://', ios:'https://apps.apple.com/cn/app/id1142110895', web:'https://www.douyin.com/' },
     ctrip:{ scheme:'ctrip://', ios:'https://apps.apple.com/cn/app/id260951613', web:'https://m.ctrip.com/webapp/hotel/' },
   };
+  const PLATFORM_NAMES = { meituan:'美团', douyin:'抖音', ctrip:'携程' };
+  // 是否在微信内
+  const inWeChat = /MicroMessenger/i.test(navigator.userAgent);
+
   function jump(key){
     const p=PLATFORM[key];
     if(!p) return;
-    // 尝试用 scheme 唤起 App
+
+    // 微信内：window.open / iframe / location.href 唤起 App 基本都受限，
+    // 直接在当前页面用 location.href 打开网页版，体验最顺滑。
+    if(inWeChat){
+      toast(`正在前往${PLATFORM_NAMES[key]}…`);
+      // 延迟一下让 toast 显示，再跳转
+      setTimeout(()=>{ window.location.href = p.web; }, 300);
+      return;
+    }
+
+    // 非微信环境：优先尝试用 scheme 唤起 App，失败则提示打开网页
     const start=Date.now();
     const iframe=document.createElement('iframe');
     iframe.style.display='none';
@@ -190,15 +208,12 @@
     document.body.appendChild(iframe);
     setTimeout(()=>{
       document.body.removeChild(iframe);
-      // 如果 800ms 内没被唤起（App 未安装），跳 App Store 或网页
       if(Date.now()-start<800){
-        // 在 iOS 上先试 App Store；这里直接给出选择：打开网页
-        if(confirm(`未能打开${key==='meituan'?'美团':key==='douyin'?'抖音':'携程'}App，是否打开网页版？`)){
+        if(confirm(`未能打开${PLATFORM_NAMES[key]}App，是否打开网页版？`)){
           window.open(p.web,'_blank');
         }
       }
     },800);
-    // iOS 需要 location 跳转兜底
     try{ window.location.href = p.scheme; }catch(e){}
   }
 
