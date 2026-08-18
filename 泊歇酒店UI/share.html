@@ -45,6 +45,15 @@
   .footer { text-align:center; font-size:11px; color:#bbb; padding:10px 20px 24px; }
   .toast { position:fixed; left:50%; bottom:100px; transform:translateX(-50%) translateY(20px); background:rgba(0,0,0,.82); color:#fff; padding:10px 20px; border-radius:20px; font-size:14px; opacity:0; transition:all .3s; pointer-events:none; z-index:999; max-width:85%; text-align:center; }
   .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+  /* 微信内打开引导浮层 */
+  .wx-guide { position:fixed; inset:0; background:rgba(0,0,0,.82); z-index:1000; display:none; flex-direction:column; align-items:flex-end; padding:16px 20px; color:#fff; }
+  .wx-guide.show { display:flex; }
+  .wx-guide .arrow { font-size:42px; line-height:1; margin-right:4px; animation:wxBounce 1s infinite; }
+  .wx-guide .tip { background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.28); border-radius:14px; padding:12px 16px; margin-top:10px; line-height:1.8; font-size:15px; text-align:right; max-width:84%; }
+  .wx-guide .tip b { color:#f6a821; font-weight:800; }
+  .wx-guide .close { margin-top:20px; font-size:13px; color:#ddd; text-decoration:underline; cursor:pointer; }
+  @keyframes wxBounce { 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-9px); } }
 </style>
 </head>
 <body>
@@ -99,6 +108,13 @@
 
   <div class="footer">由 泊歇酒店 好评生成器 分享</div>
   <div class="toast" id="toast"></div>
+
+  <!-- 微信内打开引导浮层 -->
+  <div class="wx-guide" id="wxGuide">
+    <div class="arrow">↗</div>
+    <div class="tip">微信暂不支持直接打开此页面<br>请点击右上角 <b>···</b><br>选择「<b>在浏览器打开</b>」</div>
+    <div class="close" onclick="document.getElementById('wxGuide').classList.remove('show')">我知道了，仍要浏览</div>
+  </div>
 
 <script>
   // 从 URL 读取分享 ID（share.html#<id>），再通过接口取数据
@@ -189,6 +205,11 @@
   const PLATFORM_NAMES = { meituan:'美团', douyin:'抖音', ctrip:'携程' };
   // 是否在微信内
   const inWeChat = /MicroMessenger/i.test(navigator.userAgent);
+
+  // 微信内打开引导浮层：提示用户点右上角「··· → 在浏览器打开」
+  if(inWeChat){
+    document.getElementById('wxGuide').classList.add('show');
+  }
 
   function jump(key){
     const p=PLATFORM[key];
