@@ -651,45 +651,57 @@ function pick2(arr,n){ const out=[]; const pool=[...arr]; while(n--&&pool.length
 
 // 生成一条好评，返回 { text, used[] }；used 是实际用到的模板句子单元
 // blocked 为本轮已占用的句子（避免同轮3条重复）
-function composeReview(style, roomId, blocked){
+function composeReview(style, roomId, blocked, textBlocked){
   const room = ROOMS.find(r=>r.id===roomId);
   const lib = BED_LIB[room.bed];
   const usePro = style==='pro';
   const useVivid = style==='vivid';
-  const used = [];
 
-  // 选句：从可用池中取，排除全局已用 + 本轮已占用；尽量保证不重复
-  function choose(pool){
-    const global = pool.filter(s=> !isUsed(roomId,s) && !blocked.has(s));
-    const round = global.length ? global : pool.filter(s=>!blocked.has(s));
-    const final = round.length ? round : pool; // 完全用尽时兜底
-    const s = pick(final);
-    used.push(s);
-    blocked.add(s);
-    return s;
+  // 拼装一次（每次重试重新随机选句；blocked 仍排除本轮其它条已用句）
+  function build(){
+    const used = [];
+    function choose(pool){
+      const global = pool.filter(s=> !isUsed(roomId,s) && !blocked.has(s));
+      const round = global.length ? global : pool.filter(s=>!blocked.has(s));
+      const final = round.length ? round : pool; // 完全用尽时兜底
+      const s = pick(final);
+      used.push(s);
+      blocked.add(s);
+      return s;
+    }
+    const open = choose((ROOM_OPEN[roomId]||[]).concat(lib.open));
+    const midN = usePro ? 1 : rand(1,2);
+    const mids = [];
+    for(let i=0;i<midN;i++){
+      mids.push(choose(usePro ? lib.proMid : lib.mid));
+    }
+    const closeCat = usePro ? 'proClose' : useVivid ? (Math.random()>0.5?'vivid':'close') : 'close';
+    const close = choose(lib[closeCat]);
+    return { text: `${open}，${mids.join('，')}。${close}！`, used };
   }
 
-  const open = choose((ROOM_OPEN[roomId]||[]).concat(lib.open));
-  const midN = usePro ? 1 : rand(1,2);
-  const mids = [];
-  for(let i=0;i<midN;i++){
-    mids.push(choose(usePro ? lib.proMid : lib.mid));
+  // 整条文本去重：排除全局已生成 + 本轮已生成；最多重试 40 次换句，避免产出重复内容
+  for(let attempt=0; attempt<40; attempt++){
+    const r = build();
+    if(!isUsed(roomId, r.text) && !(textBlocked && textBlocked.has(r.text))){
+      return r;
+    }
   }
-  const closeCat = usePro ? 'proClose' : useVivid ? (Math.random()>0.5?'vivid':'close') : 'close';
-  const close = choose(lib[closeCat]);
-  return { text: `${open}，${mids.join('，')}。${close}！`, used };
+  return build(); // 极端情况（句子组合已穷尽）兜底放行
 }
 
 // 生成一组（3种风格），3条之间互不重复，且排除全局已用
 function generateBatch(roomId){
   const blocked = new Set();
+  const textBlocked = new Set();
   const results = STYLES.map(s=>{
-    const { text, used } = composeReview(s.id, roomId, blocked);
+    const { text, used } = composeReview(s.id, roomId, blocked, textBlocked);
+    textBlocked.add(text);
     return { text, style:s.id, used };
   });
-  // 统一标记本轮所有用到的句子为已用（持久化）
+  // 统一标记本轮所有用到的句子 + 整条文本为已用（持久化，保证后续不重复）
   const allUsed = [];
-  results.forEach(r=>allUsed.push(...r.used));
+  results.forEach(r=>allUsed.push(...r.used, r.text));
   markUsed(roomId, allUsed);
   return results;
 }
@@ -713,14 +725,16 @@ function generateBatchReviews(roomId, count){
 
   // 生成 count 条不重复好评（风格循环交替，共享 blocked 保证跨条不重复）
   const blocked = new Set();
+  const textBlocked = new Set();
   const results = groups.map((imgs,i)=>{
     const style = STYLES[i % STYLES.length].id;
-    const { text, used } = composeReview(style, roomId, blocked);
+    const { text, used } = composeReview(style, roomId, blocked, textBlocked);
+    textBlocked.add(text);
     return { text, style, used, images: imgs };
   });
-  // 标记所有用到的句子为已用
+  // 标记所有用到的句子 + 整条文本为已用，保证后续生成不重复
   const allUsed = [];
-  results.forEach(r=>allUsed.push(...r.used));
+  results.forEach(r=>allUsed.push(...r.used, r.text));
   markUsed(roomId, allUsed);
   return results;
 }
