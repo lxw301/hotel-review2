@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>酒店好评分享</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue","Microsoft YaHei",sans-serif; background:#f4f4f4; color:#1a1a1a; }
+  body { max-width:520px; margin:0 auto; padding-bottom:env(safe-area-inset-bottom); }
+
+  .banner { background:linear-gradient(135deg,#f6a821,#d98f16); color:#fff; padding:28px 20px; text-align:center; }
+  .banner .brand { font-size:13px; opacity:.9; letter-spacing:1px; }
+  .banner .room { font-size:22px; font-weight:800; margin-top:6px; }
+  .banner .stars { font-size:20px; color:#fff; margin-top:6px; letter-spacing:3px; text-shadow:0 1px 3px rgba(0,0,0,.2); }
+
+  .wrap { padding:16px; }
+  .card { background:#fff; border-radius:16px; box-shadow:0 2px 14px rgba(0,0,0,.06); padding:18px; margin-bottom:14px; }
+  .card .label { font-size:13px; font-weight:700; color:#666; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+  .card .label .bar { width:3px; height:14px; background:#f6a821; border-radius:2px; }
+
+  .review-text { font-size:15px; line-height:1.85; color:#333; white-space:pre-wrap; }
+  .meta-row { display:flex; align-items:center; gap:8px; margin-top:12px; font-size:12px; color:#999; }
+  .meta-row .tag { background:#fff6e5; color:#d98f16; padding:3px 10px; border-radius:12px; font-weight:600; }
+
+  .img-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+  .img-box { position:relative; aspect-ratio:1; border-radius:10px; overflow:hidden; background:#eee; }
+  .img-box img { width:100%; height:100%; object-fit:cover; display:block; }
+  .save-hint { font-size:12px; color:#999; text-align:center; margin-top:12px; line-height:1.6; }
+  .save-hint b { color:#d98f16; }
+
+  .btn { width:100%; border:none; border-radius:24px; padding:14px; font-size:15px; font-weight:700; cursor:pointer; text-align:center; margin-bottom:10px; }
+  .btn.primary { background:linear-gradient(135deg,#f6a821,#d98f16); color:#fff; box-shadow:0 6px 18px rgba(246,168,33,.35); }
+  .btn.ghost { background:#fff; color:#1a1a1a; border:1px solid #eee; }
+  .btn.copy { background:linear-gradient(135deg,#1a1a1a,#333); color:#fff; }
+
+  /* 平台跳转 */
+  .platforms { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:14px; }
+  .pf { background:#fff; border:1px solid #eee; border-radius:14px; padding:14px 6px; text-align:center; cursor:pointer; transition:transform .1s; }
+  .pf:active { transform:scale(.95); }
+  .pf .icon { width:42px; height:42px; border-radius:12px; margin:0 auto 8px; display:flex; align-items:center; justify-content:center; font-size:22px; }
+  .pf .name { font-size:13px; font-weight:700; }
+  .pf .sub { font-size:10px; color:#999; margin-top:2px; }
+
+  .footer { text-align:center; font-size:11px; color:#bbb; padding:10px 20px 24px; }
+  .toast { position:fixed; left:50%; bottom:100px; transform:translateX(-50%) translateY(20px); background:rgba(0,0,0,.82); color:#fff; padding:10px 20px; border-radius:20px; font-size:14px; opacity:0; transition:all .3s; pointer-events:none; z-index:999; max-width:85%; text-align:center; }
+  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+  <div class="banner">
+    <div class="brand">✧ 泊歇酒店 客户好评 ✧</div>
+    <div class="room" id="roomName">酒店房型</div>
+    <div class="stars" id="stars">★★★★★</div>
+  </div>
+
+  <div class="wrap">
+    <div class="card">
+      <div class="label"><span class="bar"></span>入住体验评价</div>
+      <div class="review-text" id="reviewText">加载中…</div>
+      <div class="meta-row">
+        <span class="tag" id="scoreTag">综合评分 5.0</span>
+        <span id="dateStr"></span>
+      </div>
+      <div style="margin-top:14px;">
+        <button class="btn copy" onclick="copyText()">📋 一键复制好评文字</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="label"><span class="bar"></span>现场实拍</div>
+      <div class="img-grid" id="imgGrid"></div>
+      <div class="save-hint">💡 <b>长按图片</b>即可保存到手机相册<br>或点击下方按钮一键保存全部图片</div>
+      <div style="margin-top:12px;">
+        <button class="btn primary" onclick="saveAll()">📥 一键保存全部图片</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="label"><span class="bar"></span>前往平台下单 / 发布</div>
+      <div class="platforms" id="platforms">
+        <div class="pf" onclick="jump('meituan')">
+          <div class="icon" style="background:#ffe8e0;">🛵</div>
+          <div class="name">美团</div>
+          <div class="sub">去美团查看</div>
+        </div>
+        <div class="pf" onclick="jump('douyin')">
+          <div class="icon" style="background:#1a1a1a;">🎵</div>
+          <div class="name">抖音</div>
+          <div class="sub">去抖音看看</div>
+        </div>
+        <div class="pf" onclick="jump('ctrip')">
+          <div class="icon" style="background:#dceeff;">✈️</div>
+          <div class="name">携程</div>
+          <div class="sub">去携程预订</div>
+        </div>
+      </div>
+      <div class="save-hint">点击图标会尝试打开对应 App；若未安装将跳转到应用商店</div>
+    </div>
+  </div>
+
+  <div class="footer">由 泊歇酒店 好评生成器 分享</div>
+  <div class="toast" id="toast"></div>
+
+<script>
+  // 从 URL 读取分享 ID（share.html#<id>），再通过接口取数据
+  const shareId = location.hash.replace(/^#/, '');
+  let data = null;
+
+  function loadData(){
+    if(!shareId){
+      document.getElementById('reviewText').textContent = '链接无效或已过期，请重新扫码。';
+      document.getElementById('roomName').textContent = '未知房型';
+      return;
+    }
+    // 兼容旧格式：如果 hash 是 base64 JSON 数据则直接解析
+    if(shareId.startsWith('ey')){
+      try{ data = JSON.parse(decodeURIComponent(atob(shareId))); render(); return; }catch(e){}
+    }
+    fetch('/api/share/' + encodeURIComponent(shareId))
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { data = d; render(); })
+      .catch(() => { data = null; render(); });
+  }
+
+  function render(){
+    if(!data){
+      document.getElementById('reviewText').textContent = '链接无效或已过期，请重新扫码。';
+      document.getElementById('roomName').textContent = '未知房型';
+      return;
+    }
+    document.getElementById('roomName').textContent = data.room || '酒店房型';
+    document.getElementById('reviewText').textContent = data.text || '';
+    document.getElementById('dateStr').textContent = data.time || '';
+    if(data.score) document.getElementById('scoreTag').textContent = `综合评分 ${data.score}`;
+    const starCount = Math.round(data.score||5);
+    document.getElementById('stars').textContent = '★'.repeat(starCount) + '☆'.repeat(5-starCount);
+    const grid = document.getElementById('imgGrid');
+    const imgs = data.images || [];
+    grid.innerHTML = imgs.map(src=>`<div class="img-box"><img src="${src}" alt="房型实拍"></div>`).join('');
+  }
+
+  // 一键复制好评文字
+  function copyText(){
+    if(!data || !data.text){ toast('没有可复制的内容'); return; }
+    const text = `${data.text}\n—— 来自${data.room||'泊歇酒店'}的真实好评`;
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(()=>toast('✅ 好评已复制，可粘贴到任何平台')).catch(()=>fallbackCopy(text));
+    } else {
+      fallbackCopy(text);
+    }
+  }
+  function fallbackCopy(text){
+    const ta=document.createElement('textarea');
+    ta.value=text; document.body.appendChild(ta);
+    ta.select();
+    try{ document.execCommand('copy'); toast('✅ 好评已复制'); }catch(e){ toast('复制失败，请手动长按选择'); }
+    document.body.removeChild(ta);
+  }
+
+  // 一键保存全部图片
+  function saveAll(){
+    const imgs=(data&&data.images)||[];
+    if(!imgs.length){ toast('没有可保存的图片'); return; }
+    let saved=0;
+    imgs.forEach((src,i)=>{
+      const a=document.createElement('a');
+      a.href=src; a.download=`酒店好评图${i+1}.jpg`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      saved++;
+    });
+    toast(`✅ 已开始保存 ${saved} 张图片到相册`);
+  }
+
+  // 平台跳转（App scheme + 网页兜底）
+  const PLATFORM = {
+    meituan:{ scheme:'imeituan://www.meituan.com', ios:'https://apps.apple.com/cn/app/id423084029', web:'https://www.meituan.com/hotel/' },
+    douyin:{ scheme:'snssdk1128://', ios:'https://apps.apple.com/cn/app/id1142110895', web:'https://www.douyin.com/' },
+    ctrip:{ scheme:'ctrip://', ios:'https://apps.apple.com/cn/app/id260951613', web:'https://m.ctrip.com/webapp/hotel/' },
+  };
+  function jump(key){
+    const p=PLATFORM[key];
+    if(!p) return;
+    // 尝试用 scheme 唤起 App
+    const start=Date.now();
+    const iframe=document.createElement('iframe');
+    iframe.style.display='none';
+    iframe.src=p.scheme;
+    document.body.appendChild(iframe);
+    setTimeout(()=>{
+      document.body.removeChild(iframe);
+      // 如果 800ms 内没被唤起（App 未安装），跳 App Store 或网页
+      if(Date.now()-start<800){
+        // 在 iOS 上先试 App Store；这里直接给出选择：打开网页
+        if(confirm(`未能打开${key==='meituan'?'美团':key==='douyin'?'抖音':'携程'}App，是否打开网页版？`)){
+          window.open(p.web,'_blank');
+        }
+      }
+    },800);
+    // iOS 需要 location 跳转兜底
+    try{ window.location.href = p.scheme; }catch(e){}
+  }
+
+  let toastTimer;
+  function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2200); }
+
+  loadData();
+</script>
+</body>
+</html>

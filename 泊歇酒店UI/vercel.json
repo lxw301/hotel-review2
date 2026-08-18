@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "server.js", "use": "@vercel/node" },
+    { "src": "index.html", "use": "@vercel/static" },
+    { "src": "share.html", "use": "@vercel/static" },
+    { "src": "lib/**", "use": "@vercel/static" }
+  ],
+  "routes": [
+    { "src": "/", "dest": "/index.html" },
+    { "src": "/share.html", "dest": "/share.html" },
+    { "src": "/api/share/?(.*)", "dest": "/server.js" },
+    { "src": "/lib/(.*)", "dest": "/lib/$1" }
+  ]
+}
