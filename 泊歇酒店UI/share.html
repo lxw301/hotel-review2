@@ -143,7 +143,7 @@
     // 1. 复制文字（clipboard API + 兜底）
     let copied = false;
     if(data && data.text){
-      const text = `${data.text}\n—— 来自${data.room||'泊歇酒店'}的真实好评`;
+      const text = data.text;
       if(navigator.clipboard && navigator.clipboard.writeText){
         navigator.clipboard.writeText(text).then(
           ()=>{ copied = true; },
