@@ -222,11 +222,21 @@
       return;
     }
 
-    // 微信内：window.open / iframe / location.href 唤起 App 基本都受限，
-    // 直接在当前页面用 location.href 打开网页版，体验最顺滑。
+    // 微信内：先尝试用 scheme 唤起 App（美团/抖音/携程多为微信白名单，可直接唤起），
+    // 若唤起失败（页面未切到后台），回退到平台网页版（部分平台网页会自动提示「打开App」）
     if(inWeChat){
-      toast(`正在前往${PLATFORM_NAMES[key]}…`);
-      setTimeout(()=>{ window.location.href = p.web; }, 300);
+      toast(`正在打开${PLATFORM_NAMES[key]}…`);
+      let launched = false;
+      const onHide = () => { launched = true; };
+      document.addEventListener('visibilitychange', onHide);
+      window.location.href = p.scheme;
+      setTimeout(() => {
+        document.removeEventListener('visibilitychange', onHide);
+        if (!launched) {
+          // 唤起未成功：落到网页版（微信内由平台页自行决定是否可唤起 App）
+          window.location.href = p.web;
+        }
+      }, 1600);
       return;
     }
 
