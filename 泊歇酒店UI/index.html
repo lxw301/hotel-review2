@@ -111,7 +111,7 @@
   .r-img { aspect-ratio:1; border-radius:8px; overflow:hidden; background:#eee; }
   .r-img img { width:100%; height:100%; object-fit:cover; display:block; }
   .qr-row { display:flex; align-items:center; gap:14px; padding:12px 16px; background:#fafafa; border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
-  .qr-box { width:92px; height:92px; background:#fff; border:1px solid var(--line); border-radius:10px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; overflow:hidden; }
+  .qr-box { width:120px; height:120px; background:#fff; border:1px solid var(--line); border-radius:10px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; overflow:hidden; }
   .card-qr { line-height:0; }
   .qr-tip { flex:1; }
   .qr-tip-title { font-size:13px; font-weight:600; color:#1a1a1a; margin-bottom:4px; }
@@ -141,9 +141,9 @@
   .lib-item .txt { font-size:13px; line-height:1.7; color:#333; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
   .lib-item .txt.full { -webkit-line-clamp:unset; display:block; }
   .lib-item .lib-act { display:flex; gap:8px; margin-top:10px; }
-  .lib-qr { display:flex; align-items:center; gap:10px; margin-top:12px; padding-top:10px; border-top:1px dashed var(--line); }
-  .lib-qr .qr-box { width:72px; height:72px; background:#fff; border:1px solid var(--line); border-radius:8px; display:flex; align-items:center; justify-content:center; cursor:pointer; overflow:hidden; }
-  .lib-qr .qr-tip { font-size:11px; color:var(--gray-9); line-height:1.5; }
+  .lib-qr { display:flex; align-items:center; gap:12px; margin-top:12px; padding-top:12px; border-top:1px dashed var(--line); }
+  .lib-qr .qr-box { width:165px; height:165px; background:#fff; border:1px solid var(--line); border-radius:10px; display:flex; align-items:center; justify-content:center; cursor:pointer; overflow:hidden; padding:6px; flex-shrink:0; }
+  .lib-qr .qr-tip { font-size:12px; color:var(--gray-9); line-height:1.6; }
   .lib-imgs { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:10px; }
   .lib-img { aspect-ratio:1; border-radius:8px; overflow:hidden; background:#eee; }
   .lib-img img { width:100%; height:100%; object-fit:cover; display:block; }
@@ -706,7 +706,7 @@ function renderResult(){
   // 为每条好评自动生成二维码（含文字+图片）
   list.querySelectorAll('.review-card').forEach(card=>{
     const idx = card.getAttribute('data-idx');
-    autoQR(card, state.currentResults[idx]);
+    autoQR(card, state.currentResults[idx], 120);
   });
 }
 function switchStyle(id){ state.currentStyle=id; renderResult(); }
@@ -789,6 +789,31 @@ function getShareUrl(item){
   });
 }
 
+// 用 qrcode-generator 生成标准可扫描的二维码 canvas（整数缩放 + 白边，无失真）
+function buildQR(url, size){
+  const qr = qrcode(0, 'M');
+  qr.addData(url);
+  qr.make();
+  const count = qr.getModuleCount();
+  const scale = Math.max(1, Math.floor(size / count));
+  const pad = scale * 2;               // 四周白边（quiet zone），保证可被扫描识别
+  const px = count * scale + pad * 2;
+  const canvas = document.createElement('canvas');
+  canvas.width = px; canvas.height = px;
+  canvas.style.width = '100%';
+  canvas.style.height = '100%';
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, px, px);
+  ctx.fillStyle = '#000000';
+  for(let r=0;r<count;r++){
+    for(let c=0;c<count;c++){
+      if(qr.isDark(r,c)) ctx.fillRect(c*scale + pad, r*scale + pad, scale, scale);
+    }
+  }
+  return canvas;
+}
+
 // 在指定容器内渲染二维码（小尺寸），点击放大
 function renderQRIn(container, url, size){
   container.innerHTML = '';
@@ -800,20 +825,21 @@ function renderQRIn(container, url, size){
   holder.onclick = ()=>{ enlargeQR(url); };
   container.appendChild(holder);
   try{
-    new QRCode(holder, { text: url, width: size||120, height: size||120, correctLevel: QRCode.CorrectLevel.M });
+    const cv = buildQR(url, size||120);
+    holder.appendChild(cv);
   }catch(e){
     container.innerHTML = '<div class="hint" style="font-size:10px;">二维码生成失败</div>';
   }
 }
 
 // 为某条好评自动生成二维码（含文字+图片分享）
-function autoQR(cardEl, item){
+function autoQR(cardEl, item, qrSize){
   const qrBox = cardEl.querySelector('.qr-box');
   if(!qrBox) return;
   qrBox.innerHTML = '<div class="hint" style="text-align:center;padding:8px;">生成中…</div>';
   getShareUrl(item).then(url=>{
     if(url){
-      renderQRIn(qrBox, url, 90);
+      renderQRIn(qrBox, url, qrSize||90);
     } else {
       qrBox.innerHTML = '<div class="hint" style="text-align:center;padding:8px;">生成失败</div>';
     }
@@ -850,7 +876,7 @@ function enlargeQR(url){
   bigQRUrl = url;
   const box = document.getElementById('bigQRBox');
   box.innerHTML = '';
-  try{ new QRCode(box, { text: url, width: 220, height: 220, correctLevel: QRCode.CorrectLevel.M }); }catch(e){}
+  try{ box.appendChild(buildQR(url, 220)); }catch(e){}
   document.getElementById('qrModal').classList.add('show');
 }
 function showModal(){ document.getElementById('qrModal').classList.add('show'); }
@@ -910,7 +936,7 @@ function loadLib(){
   requestAnimationFrame(()=>{
     state.library.forEach((item,idx)=>{
       const card = wrap.querySelector('.lib-item[data-libidx="'+idx+'"]');
-      if(card) autoQR(card, item);
+      if(card) autoQR(card, item, 160);
     });
   });
 }
