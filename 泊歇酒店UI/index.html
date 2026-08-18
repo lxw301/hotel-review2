@@ -61,7 +61,7 @@
   .room-card.selected { border:2px solid var(--primary); box-shadow:0 4px 16px rgba(246,168,33,.18); }
 
   /* 房型缩略图 */
-  .room-thumbs { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; padding:0 16px 14px; }
+  .room-thumbs { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; padding:0 16px 14px; max-height:368px; overflow-y:auto; }
   .tthumb { position:relative; aspect-ratio:1; border-radius:10px; overflow:hidden; background:#eee; }
   .tthumb img { width:100%; height:100%; object-fit:cover; display:block; }
   .tthumb .del { position:absolute; top:4px; right:4px; width:20px; height:20px; border-radius:50%; background:rgba(0,0,0,.55); color:#fff; border:none; font-size:12px; line-height:1; cursor:pointer; }
@@ -73,6 +73,9 @@
   .room-empty { text-align:center; color:var(--gray-9); font-size:13px; padding:20px; border:1.5px dashed #eee; border-radius:12px; margin:0 16px 14px; cursor:pointer; }
   .room-empty .demo-btn { display:inline-block; margin-top:10px; background:var(--primary-soft); color:var(--primary-dark); padding:6px 14px; border-radius:16px; font-size:12px; font-weight:600; }
   .demo-hint { display:flex; align-items:center; gap:6px; background:#fff8e1; border:1px solid #ffe082; color:#8b6914; font-size:12px; padding:9px 12px; border-radius:10px; margin-bottom:14px; line-height:1.5; }
+  .cloud-stat { font-size:12px; padding:8px 12px; border-radius:10px; margin:10px 16px 0; line-height:1.5; background:#e8f4fd; border:1px solid #bbdefb; color:#1565c0; }
+  .cloud-stat.ok { background:#e8f4fd; border-color:#bbdefb; color:#1565c0; }
+  .cloud-stat.bad { background:#fdecea; border-color:#f5c6cb; color:#c62828; }
 
   /* 生成中 */
   .gen-wrap { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:30px 24px; text-align:center; }
@@ -137,7 +140,12 @@
   .lib-empty { text-align:center; padding:60px 30px; color:var(--gray-9); }
   .lib-empty .emoji { font-size:48px; margin-bottom:12px; opacity:.6; }
   .lib-item { padding:14px 16px; margin-bottom:12px; }
-  .lib-item .time { font-size:12px; color:var(--gray-9); margin-bottom:8px; display:flex; justify-content:space-between; }
+  .lib-item .time { font-size:12px; color:var(--gray-9); margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; }
+  .lib-tag { display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600; margin-left:6px; vertical-align:1px; }
+  .lib-tag.fresh { background:#e8f7e8; color:#2e7d32; }
+  .lib-tag.used { background:#f0f0f0; color:#999; }
+  .lib-item.is-used .txt { opacity:.6; }
+  .r-btn.ok { background:#2ecc71; border-color:#2ecc71; color:#fff; }
   .lib-item .txt { font-size:13px; line-height:1.7; color:#333; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
   .lib-item .txt.full { -webkit-line-clamp:unset; display:block; }
   .lib-item .lib-act { display:flex; gap:8px; margin-top:10px; }
@@ -149,6 +157,18 @@
   .lib-img img { width:100%; height:100%; object-fit:cover; display:block; }
   .lib-group { margin-bottom:16px; }
   .lib-group-head { display:flex; align-items:center; justify-content:space-between; padding:10px 4px; font-size:15px; font-weight:700; }
+  .lib-section { margin-bottom:22px; }
+  .lib-section-head { display:flex; align-items:center; justify-content:space-between; padding:11px 16px; border-radius:14px; font-weight:700; font-size:15px; margin-bottom:12px; }
+  .lib-section-head.fresh { background:linear-gradient(135deg,#e6f7ea,#f2fbf4); color:#2e7d32; border:1px solid #c8e6c9; }
+  .lib-section-head.used { background:#f5f5f5; color:#9e9e9e; border:1px solid #e4e4e4; }
+  .lib-section-head .sec-count { font-size:12px; font-weight:600; opacity:.85; }
+  .lib-section-empty { text-align:center; color:var(--gray-9); font-size:12px; padding:16px; background:#fafafa; border:1px dashed var(--line); border-radius:12px; }
+  .lib-section.is-used-sec .lib-item { opacity:.72; }
+  .lib-group-head { align-items:center; }
+  .g-count { display:inline-block; padding:3px 12px; border-radius:12px; font-size:12px; font-weight:700; }
+  .g-count.fresh { background:#e8f7e8; color:#2e7d32; border:1px solid #c8e6c9; }
+  .g-count.used { background:#f0f0f0; color:#999; border:1px solid #e0e0e0; }
+  .g-name { font-size:15px; font-weight:700; }
 
   /* 二维码弹窗 */
   .modal-mask { position:fixed; inset:0; background:rgba(0,0,0,.55); display:none; align-items:center; justify-content:center; z-index:200; padding:24px; }
@@ -166,6 +186,12 @@
   .batch-opt .num { font-size:20px; font-weight:800; color:var(--ink); }
   .batch-opt .lbl { font-size:11px; color:var(--gray-9); margin-top:4px; }
   .batch-opt.disabled { opacity:.35; pointer-events:none; }
+  .batch-input-row { display:flex; align-items:center; gap:10px; margin:6px 0 14px; }
+  .batch-input-row input { flex:1; min-width:0; border:1.5px solid var(--line); border-radius:12px; padding:12px 14px; font-size:18px; font-weight:700; text-align:center; outline:none; }
+  .batch-input-row input:focus { border-color:var(--primary); }
+  .batch-input-row .unit { font-size:14px; color:var(--gray-9); font-weight:600; }
+  .batch-input-row .go-btn { border:none; background:var(--primary); color:#fff; padding:12px 18px; border-radius:12px; font-size:14px; font-weight:700; cursor:pointer; }
+  .batch-input-row .go-btn:active { transform:scale(.95); }
 </style>
 </head>
 <body>
@@ -176,6 +202,8 @@
     <span class="title">房型好评生成器</span>
     <button class="sub-btn" onclick="goLib()">📚 评价库</button>
   </div>
+
+  <div id="cloudStat" class="cloud-stat">☁️ 正在连接云端…</div>
 
   <div class="content" id="roomList"></div>
 
@@ -189,9 +217,14 @@
 <div class="modal-mask" id="batchModal">
   <div class="modal">
     <div class="m-title">批量生成好评</div>
-    <div class="m-sub" id="batchSub">选择要生成的数量</div>
+    <div class="m-sub" id="batchSub">选择要生成的数量（无上限）</div>
+    <div class="batch-input-row">
+      <input type="number" id="batchCount" min="1" max="999" value="5" inputmode="numeric">
+      <span class="unit">条</span>
+      <button class="go-btn" onclick="doBatchGenerate(Math.max(1,parseInt(document.getElementById('batchCount').value)||1))">开始生成</button>
+    </div>
     <div class="batch-options" id="batchOptions"></div>
-    <div class="m-tip" id="batchTip">每条好评含不同文字 + 3 张不重复图片</div>
+    <div class="m-tip" id="batchTip">每条 3 张图 + 不重复文案；图库充足时图片组间不重复，不足时自动复用</div>
     <button class="m-close" onclick="closeBatchModal()">取消</button>
   </div>
 </div>
@@ -331,7 +364,7 @@ let state = {
 
 const USED_KEY = 'room_reviews_used';
 
-// 加载/保存已用记录
+// 加载/保存已用记录（本地缓存；权威数据在云端）
 function loadUsed(){
   try{ const s=localStorage.getItem(USED_KEY); if(s) state.used=JSON.parse(s); }catch(e){ state.used={}; }
   // 确保每个房型都有结构
@@ -339,8 +372,8 @@ function loadUsed(){
     if(!state.used[r.id]) state.used[r.id]={};
   });
 }
-function saveUsed(){ localStorage.setItem(USED_KEY, JSON.stringify(state.used)); }
-// 标记某房型的某些句子为已用
+function saveUsed(){ try{ localStorage.setItem(USED_KEY, JSON.stringify(state.used)); }catch(e){} }
+// 标记某房型的某些句子为已用（本地 + 云端）
 function markUsed(roomId, sentences){
   const u = state.used[roomId];
   sentences.forEach(s=>{
@@ -348,6 +381,7 @@ function markUsed(roomId, sentences){
     if(t) u[t] = 1;
   });
   saveUsed();
+  apiPost('/api/used/add', { roomId, sentences });  // 云端同步（失败不阻塞，下次同步校正）
 }
 // 判断句子是否已用
 function isUsed(roomId, sentence){
@@ -369,10 +403,80 @@ function isExhausted(roomId){
     return pool.length>0 && pool.every(s=>isUsed(roomId, s));
   });
 }
-// 重置某房型已用记录
+// 重置某房型已用记录（本地 + 云端）
 function resetUsed(roomId){
   state.used[roomId] = {};
   saveUsed();
+  apiPost('/api/used/reset', { roomId });
+}
+
+/* ===================== 云端同步（多员工共享同一份数据） ===================== */
+const SYNC_INTERVAL = 20000;   // 每20秒自动同步一次
+let syncTimer = null;
+let lastSnapshot = '';         // 上次云端数据快照（仅变化时刷新界面，不打断操作）
+
+function apiPost(path, body){
+  return fetch(path, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body||{}) })
+    .then(r=>r.json()).catch(()=>null);
+}
+// 应用服务器返回的房型图库
+function applyRooms(rooms){
+  ROOMS.forEach(r=>{ if(rooms && Array.isArray(rooms[r.id])) state.rooms[r.id] = rooms[r.id]; });
+}
+// 本地缓存（云端失败时的兜底显示）
+function cacheLocal(){
+  try{
+    localStorage.setItem('room_reviews_lib', JSON.stringify(state.library));
+    localStorage.setItem(USED_KEY, JSON.stringify(state.used));
+  }catch(e){}
+}
+// 按当前所在页刷新显示
+function rerenderCurrentPage(){
+  const active = document.querySelector('.page.active');
+  if(!active) return;
+  if(active.id === 'page-upload') renderRooms();
+  else if(active.id === 'page-library') loadLib();
+}
+// 更新顶部云同步状态条
+function updateCloudStat(ok, d){
+  const el = document.getElementById('cloudStat');
+  if(!el) return;
+  if(ok){
+    const imgs = ROOMS.reduce((n,r)=>n+(d.rooms&&d.rooms[r.id]?d.rooms[r.id].length:0),0);
+    el.innerHTML = `☁️ 云端同步中 · 全员共享：图库 ${imgs} 张 · 评价 ${d.library?d.library.length:0} 条`;
+    el.className = 'cloud-stat ok';
+  }else{
+    el.innerHTML = '⚠️ 云端连接失败，正在重试…（当前显示本地缓存）';
+    el.className = 'cloud-stat bad';
+  }
+}
+// 拉取云端全量数据；有变化才刷新界面
+function syncFromServer(render){
+  return fetch('/api/data').then(r=>r.json()).then(d=>{
+    if(!d){ updateCloudStat(false); return; }
+    applyRooms(d.rooms);
+    if(Array.isArray(d.library)) state.library = d.library;
+    if(d.used){
+      state.used = d.used;
+      ROOMS.forEach(r=>{ if(!state.used[r.id]) state.used[r.id]={}; });  // 保障房型结构完整
+    }
+    cacheLocal();
+    updateCloudStat(true, d);
+    const snap = JSON.stringify([d.rooms, d.library, d.used]);
+    const changed = snap !== lastSnapshot;
+    lastSnapshot = snap;
+    if(changed && render !== false) rerenderCurrentPage();
+  }).catch(()=>updateCloudStat(false));
+}
+// 启动自动同步：定时 + 从后台切回前台时立即同步
+function startAutoSync(){
+  if(syncTimer) return;
+  syncTimer = setInterval(()=>{
+    if(document.visibilityState === 'visible') syncFromServer(true);
+  }, SYNC_INTERVAL);
+  document.addEventListener('visibilitychange', ()=>{
+    if(document.visibilityState === 'visible') syncFromServer(true);
+  });
 }
 
 /* ===================== 图片工具 ===================== */
@@ -387,16 +491,14 @@ function svgPlace(text, color){
 /* ===================== 房型列表渲染 ===================== */
 function renderRooms(){
   const wrap = document.getElementById('roomList');
-  const demoBanner = `<div class="demo-hint">💡 若无法弹出文件选择框，可点击各房型下的「填入示例图」快速体验；正式使用请用手机/电脑浏览器上传真实照片。</div>`;
+  const demoBanner = `<div class="demo-hint">☁️ 图库与评价库已云端共享，6 位员工看到的内容实时一致。上传照片数量无上限（可滚动查看）；快速体验可点「填示例」。</div>`;
   wrap.innerHTML = demoBanner + ROOMS.map(r=>{
     const imgs = state.rooms[r.id];
     const sel = state.selected===r.id;
-    // 网格：显示全部已存图片（最多9张），不足3格时补充添加格
+    // 网格：显示全部已存图片（数量无上限，超出区域滚动），末尾固定添加格
     let thumbs = imgs.map((img,i)=>`
-      <div class="tthumb"><img src="${img}" alt=""><span class="idx">${i+1}</span><button class="del" onclick="event.stopPropagation();removeImg('${r.id}',${i})">×</button></div>`).join('');
-    if(imgs.length < 9){
-      thumbs += `<div class="tthumb add" onclick="event.stopPropagation();uploadFor('${r.id}')"><span class="plus">+</span></div>`;
-    }
+      <div class="tthumb"><img src="${img}" alt=""><span class="idx">${i+1}</span><button class="del" onclick="event.stopPropagation();removeImg('${r.id}','${img}')">×</button></div>`).join('');
+    thumbs += `<div class="tthumb add" onclick="event.stopPropagation();uploadFor('${r.id}')"><span class="plus">+</span></div>`;
     const body = `<div class="room-thumbs">${thumbs}</div>`;
 
     return `<div class="card room-card ${sel?'selected':''}" onclick="selectRoom('${r.id}')">
@@ -417,17 +519,29 @@ function renderRooms(){
   updateGenBtn();
 }
 
-// 为指定房型填充示例图（3张，模拟真实上传，避免 iframe 拦截文件选择）
+// 为指定房型填充示例图（每次点击补 9 张，数量无上限；上传到云端全员共享，图片哈希幂等不重复）
 function fillDemo(roomId){
   const room = ROOMS.find(r=>r.id===roomId);
-  if(state.rooms[roomId].length>=9){ toast('该房型已达上限 9 张'); return; }
   const colors = ['#f6a821','#e74c3c','#27ae60','#2980b9','#8e44ad','#d35400','#16a085','#c0392b','#2c3e50'];
-  const n = 9 - state.rooms[roomId].length;
+  const start = state.rooms[roomId].length;
+  const n = 9;
+  toast('☁️ 正在同步示例图到云端…');
+  let done = 0, got = 0;
+  const finish = ()=>{
+    if(done < n) return;
+    if(got){ syncFromServer(true); toast(`✅ 已为「${room.name}」填入示例图，全员共享`); }
+    else toast('⚠️ 示例图上传失败，请检查网络');
+  };
   for(let i=0;i<n;i++){
-    state.rooms[roomId].push(svgPlace(`${room.emoji} ${room.name} 图${state.rooms[roomId].length+1}`, colors[state.rooms[roomId].length % colors.length]));
+    const svg = svgPlace(`${room.emoji} ${room.name} 图${start+i+1}`, colors[(start+i) % colors.length]);
+    // dataURL(svg utf8) → base64 dataURL
+    fetch(svg).then(r=>r.blob()).then(b=>new Promise(res=>{
+      const fr = new FileReader(); fr.onload=()=>res(fr.result); fr.readAsDataURL(b);
+    })).then(durl=>apiPost('/api/img', { data:durl }))
+      .then(res=>{ if(res && res.url){ got++; return apiPost('/api/rooms/add', { roomId, urls:[res.url] }); } })
+      .then(()=>{}).catch(()=>{})
+      .finally(()=>{ done++; finish(); });
   }
-  renderRooms();
-  toast(`✅ 已为「${room.name}」填入示例图，共 ${state.rooms[roomId].length} 张`);
 }
 
 function selectRoom(id){
@@ -440,11 +554,34 @@ function uploadFor(roomId){
   const fi = document.getElementById('fileInput');
   fi.onchange = e => {
     const files = Array.from(e.target.files||[]);
+    if(!files.length) return;
+    toast('☁️ 正在上传到云端…');
+    let left = files.length, fail = 0;
+    const finishOne = ()=>{
+      if(left > 0) return;
+      if(fail) toast(`⚠️ ${fail} 张上传失败，请重试`);
+      else { syncFromServer(true); toast(`✅ 已上传 ${files.length} 张，全员共享`); }
+    };
     files.forEach(f=>{
       const reader = new FileReader();
       reader.onload = ev => {
-        state.rooms[state.pendingRoom].push(ev.target.result);
-        renderRooms();
+        // 压缩后上传云端（原图过大，压到1400px保证多端秒开）
+        compressImage(ev.target.result, 1400, 0.82).then(durl=>{
+          apiPost('/api/img', { data: durl }).then(res=>{
+            if(res && res.url){
+              return apiPost('/api/rooms/add', { roomId: state.pendingRoom, urls:[res.url] })
+                .then(r=>{ if(!r || !r.ok) fail++; })
+                .catch(()=>{ fail++; });
+            } else { fail++; }
+          }).catch(()=>{ fail++; })
+          .finally(()=>{
+            left--;
+            if(left === 0){
+              if(fail) toast(`⚠️ ${fail} 张上传失败，请重试`);
+              else { syncFromServer(true); toast(`✅ 已上传 ${files.length} 张，全员共享`); }
+            }
+          });
+        });
       };
       reader.readAsDataURL(f);
     });
@@ -453,9 +590,11 @@ function uploadFor(roomId){
   fi.click();
 }
 
-function removeImg(roomId, idx){
-  state.rooms[roomId].splice(idx,1);
-  renderRooms();
+function removeImg(roomId, url){
+  apiPost('/api/rooms/remove', { roomId, url }).then(r=>{
+    if(r && r.ok){ applyRooms(r.rooms); renderRooms(); toast('已删除（全员同步）'); }
+    else toast('⚠️ 删除失败');
+  });
 }
 
 /* ===================== 生成按钮 ===================== */
@@ -537,16 +676,20 @@ function generateBatch(roomId){
   return results;
 }
 
-// 批量生成 N 条好评：每条不同3张图、文字跨条不重复
+// 批量生成 N 条好评（数量无上限）：每条 3 张图 + 文字尽量不重复
 function generateBatchReviews(roomId, count){
   const room = ROOMS.find(r=>r.id===roomId);
   const pool = [...state.rooms[roomId]];
-  if(pool.length < count*3){ toast('图片不足，需 '+(count*3)+' 张'); return null; }
+  if(pool.length < 3){ toast('该房型至少需要 3 张图片'); return null; }
 
-  // 打乱后按每组3张分组，保证组间图片不重复
-  const shuffled = shuffle(pool);
+  // 图片分组：图库充足时组间不重复；不足时循环复用（每条内 3 张仍不重复）
   const groups = [];
-  for(let i=0;i<count;i++){ groups.push(shuffled.slice(i*3, i*3+3)); }
+  if(pool.length >= count*3){
+    const shuffled = shuffle(pool);
+    for(let i=0;i<count;i++) groups.push(shuffled.slice(i*3, i*3+3));
+  } else {
+    for(let i=0;i<count;i++) groups.push(pick2(pool, 3));
+  }
 
   // 生成 count 条不重复好评（风格循环交替，共享 blocked 保证跨条不重复）
   const blocked = new Set();
@@ -566,15 +709,14 @@ function generateBatchReviews(roomId, count){
 function openBatchModal(){
   const room = state.selected;
   if(!room){ toast('请先选择房型'); return; }
+  if(state.rooms[room].length < 3){ toast('该房型至少需要 3 张图片'); return; }
   const total = state.rooms[room].length;
-  if(total < 3){ toast('该房型至少需要 3 张图片'); return; }
-  const max = Math.max(1, Math.floor(total/3));
-  const opts = [1,2,3,4,5].filter(n=>n<=max);
-  if(!opts.length) opts.push(1);
+  // 快捷数量 + 输入框自定义（数量无上限；图库充足时组间图不重复，不足自动复用）
+  const opts = [1,3,5,10,20];
   const box = document.getElementById('batchOptions');
   box.innerHTML = opts.map(n=>`<div class="batch-opt" onclick="doBatchGenerate(${n})"><div class="num">${n}</div><div class="lbl">条</div></div>`).join('');
-  document.getElementById('batchSub').textContent = `「${nameOf(room)}」图库 ${total} 张，最多可生成 ${max} 条`;
-  document.getElementById('batchTip').textContent = `每条好评含不同文字 + 3 张不重复图片，好评内容不重复`;
+  document.getElementById('batchSub').textContent = `「${nameOf(room)}」图库 ${total} 张 · 生成数量无上限`;
+  document.getElementById('batchCount').value = 5;
   document.getElementById('batchModal').classList.add('show');
 }
 function closeBatchModal(){ document.getElementById('batchModal').classList.remove('show'); }
@@ -606,6 +748,8 @@ function startGenerate(){
   const room = state.selected;
   if(!room){ toast('请先选择房型'); return; }
   if(state.rooms[room].length < 3){ toast('该房型至少需要 3 张图片'); return; }
+
+  state.lastGenRoom = room;  // 记录本次生成的房型（保存时兜底，防止中途取消选房导致归类丢失）
 
   // 从该房型图库中随机任选 3 张（保证不跨房型）
   state.picked3 = shuffle(state.rooms[room]).slice(0,3);
@@ -736,32 +880,31 @@ function resetUsedClick(){
   }
 }
 function saveToLib(){
-  const room=state.selected;
+  const room=state.selected || state.lastGenRoom;  // 兜底：生成后取消选房也能正确归类房型
+  const mk = (r, imgs)=>({
+    time:new Date().toLocaleString('zh-CN'),
+    text:r.text,
+    room:nameOf(room),
+    roomId: room,
+    images:(imgs||[]).slice(0,3),
+    used: false,
+    shareId: r.shareId || null   // 继承结果页二维码的分享ID（用于扫码状态跟踪）
+  });
+  let items;
   if(state.batchMode){
-    // 批量模式：保存全部到评价库
-    state.currentResults.forEach(r=>{
-      state.library.unshift({
-        time:new Date().toLocaleString('zh-CN'),
-        text:r.text,
-        room:nameOf(room),
-        roomId: room,
-        images: (r.images||[]).slice(0,3)
-      });
-    });
-    localStorage.setItem('room_reviews_lib', JSON.stringify(state.library));
-    toast(`⭐ 已保存 ${state.currentResults.length} 条好评到评价库`);
+    items = state.currentResults.map(r=>mk(r, r.images));
   } else {
-    const best=state.currentResults[0];
-    state.library.unshift({
-      time:new Date().toLocaleString('zh-CN'),
-      text:best.text,
-      room:nameOf(room),
-      roomId: room,
-      images: state.picked3.slice(0,3)
-    });
-    localStorage.setItem('room_reviews_lib', JSON.stringify(state.library));
-    toast('⭐ 已保存到评价库（含文字+图片）');
+    items = [mk(state.currentResults[0], state.picked3)];
   }
+  apiPost('/api/library/add', { items }).then(res=>{
+    if(res && res.ok){
+      state.library = res.items.concat(state.library);  // 服务器返回带 id 的条目
+      cacheLocal();
+      toast(`⭐ 已保存 ${items.length} 条到共享评价库（全员可见）`);
+    }else{
+      toast('⚠️ 保存失败，请检查网络后重试');
+    }
+  });
 }
 
 /* ===================== 二维码分享（每条好评自动内嵌） ===================== */
@@ -770,22 +913,35 @@ state.compressed = null;
 
 // 获取分享URL（用 item 自己的图片，文字单独POST）
 function getShareUrl(item){
+  // 已有分享ID：直接复用（二维码保持不变，扫码状态可跟踪）
+  if(item.shareId){
+    return Promise.resolve(location.origin + '/share.html#' + item.shareId);
+  }
   const roomId = (item && item.roomId) || state.selected;
   const imgs = item.images && item.images.length ? item.images : state.picked3;
   const compress = Promise.all(imgs.slice(0,3).map(src=>compressImage(src, 700, 0.7)));
-  return compress.then(compressed => {
+  return compress.then(compressed =>
+    // 图片压缩后传云端存文件，分享数据只存 URL（防止 data.json 无限膨胀）
+    Promise.all(compressed.map(d=>apiPost('/api/img', { data:d }).then(r=> (r && r.url) || d)))
+  ).then(urls => {
     const payload = {
       room: nameOf(roomId),
       text: item.text,
       score: 5,
-      images: compressed,
+      images: urls,
       time: new Date().toLocaleDateString('zh-CN'),
     };
     return fetch('/api/share', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
-    }).then(r=>r.json()).then(res=> res && res.url ? res.url : null);
+    }).then(r=>r.json()).then(res=>{
+      if(res && res.url){
+        item.shareId = res.id;  // 记住分享ID，评价库据此检测"是否被扫码过"
+        return res.url;
+      }
+      return null;
+    });
   });
 }
 
@@ -886,63 +1042,117 @@ document.getElementById('qrModal').addEventListener('click', e=>{ if(e.target.id
 /* ===================== 评价库（按房型归类） ===================== */
 function goLib(){
   loadLib(); showPage('page-library');
+  // 拉取云端最新数据（含"扫码自动归档"：被扫过的二维码对应评价自动归入已使用）
+  syncFromServer(true);
 }
 function loadLib(){
-  const s=localStorage.getItem('room_reviews_lib');
-  if(s) state.library=JSON.parse(s);
   const wrap=document.getElementById('libContent');
   if(!state.library.length){
-    wrap.innerHTML=`<div class="lib-empty"><div class="emoji">📭</div><div>还没有保存过评价</div><div class="hint" style="margin-top:8px;">生成后点击"保存"即可按房型收藏</div></div>`;
+    wrap.innerHTML=`<div class="lib-empty"><div class="emoji">📭</div><div>还没有保存过评价</div><div class="hint" style="margin-top:8px;">生成后点击"保存"即可按房型收藏（全员共享）</div></div>`;
     return;
   }
-  // 按房型分组
-  const grouped = {};
-  state.library.forEach((item,idx)=>{
-    const roomKey = item.roomId || 'other';
-    if(!grouped[roomKey]) grouped[roomKey] = { items:[], name: item.room || '其他' };
-    grouped[roomKey].items.push({ item, idx });
+  // ===== 第一步：按使用状态分成两大区 =====
+  const freshList = [], usedList = [];
+  state.library.forEach(item=>{
+    (item.used ? usedList : freshList).push(item);
   });
 
-  const roomOrder = ROOMS.map(r=>r.id).filter(id=>grouped[id]);
-  const others = grouped['other'] ? ['other'] : [];
-  const keys = [...roomOrder, ...others];
-
-  wrap.innerHTML = keys.map(k=>{
-    const g = grouped[k];
-    const room = ROOMS.find(r=>r.id===k);
-    const emoji = room ? room.emoji : '🏨';
-    const itemsHtml = g.items.map(({item, idx})=>{
-      const imgs = item.images && item.images.length
-        ? `<div class="lib-imgs">${item.images.map(src=>`<div class="lib-img"><img src="${src}" alt="房型图片" onerror="this.style.background='#eee'"></div>`).join('')}</div>`
-        : '';
-      return `<div class="lib-item card" data-libidx="${idx}">
-        <div class="time"><span>🕐 ${item.time}</span><span class="hint">${item.text.length}字</span></div>
-        <div class="txt" id="libtxt-${idx}">${item.text}</div>
-        ${imgs}
-        <div class="lib-qr" data-idx="${idx}"><div class="qr-box" data-idx="${idx}"></div><span class="qr-tip">扫码查看评论并保存图片</span></div>
-        <div class="lib-act">
-          <button class="r-btn" onclick="copyLib(${idx})">复制</button>
-          <button class="r-btn" onclick="toggleLibFull(${idx})">展开</button>
-          <button class="r-btn dark" onclick="delLib(${idx})">删除</button>
+  // ===== 第二步：渲染单个分区（区内按房型分组，每组显示条数） =====
+  const renderSection = (list, isUsed) => {
+    const head = `<div class="lib-section-head ${isUsed?'used':'fresh'}">
+      <span>${isUsed?'✔ 已使用':'🆕 未使用'}</span>
+      <span class="sec-count">${list.length} 条</span>
+    </div>`;
+    if(!list.length){
+      return `<div class="lib-section ${isUsed?'is-used-sec':''}">${head}
+        <div class="lib-section-empty">${isUsed?'暂无已使用的评价（二维码被扫码后自动归入此处）':'暂无未使用的评价'}</div>
+      </div>`;
+    }
+    // 区内按房型分组
+    const grouped = {};
+    list.forEach(item=>{
+      const roomKey = item.roomId || 'other';
+      if(!grouped[roomKey]) grouped[roomKey] = { items:[], name: item.room || '其他' };
+      grouped[roomKey].items.push(item);
+    });
+    const roomOrder = ROOMS.map(r=>r.id).filter(id=>grouped[id]);
+    const others = grouped['other'] ? ['other'] : [];
+    const keys = [...roomOrder, ...others];
+    const groupsHtml = keys.map(k=>{
+      const g = grouped[k];
+      const room = ROOMS.find(r=>r.id===k);
+      const emoji = room ? room.emoji : '🏨';
+      const itemsHtml = g.items.map(item=>{
+        const iid = item.id;
+        const imgs = item.images && item.images.length
+          ? `<div class="lib-imgs">${item.images.map(src=>`<div class="lib-img"><img src="${src}" alt="房型图片" onerror="this.style.background='#eee'"></div>`).join('')}</div>`
+          : '';
+        const usedTag = item.used
+          ? '<span class="lib-tag used">✔ 已使用</span>'
+          : '<span class="lib-tag fresh">🆕 未使用</span>';
+        return `<div class="lib-item card ${item.used?'is-used':''}" data-libid="${iid}">
+          <div class="time"><span>🕐 ${item.time} ${usedTag}</span><span class="hint">${item.text.length}字</span></div>
+          <div class="txt" id="libtxt-${iid}">${item.text}</div>
+          ${imgs}
+          <div class="lib-qr"><div class="qr-box"></div><span class="qr-tip">扫码查看评论并保存图片</span></div>
+          <div class="lib-act">
+            <button class="r-btn ${item.used?'':'ok'}" onclick="toggleUsed('${iid}')">${item.used?'恢复未用':'标记已用'}</button>
+            <button class="r-btn" onclick="copyLib('${iid}')">复制</button>
+            <button class="r-btn" onclick="toggleLibFull('${iid}')">展开</button>
+            <button class="r-btn dark" onclick="delLib('${iid}')">删除</button>
+          </div>
+        </div>`;
+      }).join('');
+      return `<div class="lib-group">
+        <div class="lib-group-head">
+          <span class="g-name">${emoji} ${g.name}</span>
+          <span class="g-count ${isUsed?'used':'fresh'}">${g.items.length} 条评价</span>
         </div>
+        ${itemsHtml}
       </div>`;
     }).join('');
-    return `<div class="lib-group">
-      <div class="lib-group-head"><span>${emoji} ${g.name}</span><span class="hint">${g.items.length} 条</span></div>
-      ${itemsHtml}
-    </div>`;
-  }).join('');
+    return `<div class="lib-section ${isUsed?'is-used-sec':''}">${head}${groupsHtml}</div>`;
+  };
+
+  // ===== 第三步：未使用区在上，已使用区在下 =====
+  wrap.innerHTML = renderSection(freshList, false) + renderSection(usedList, true);
+
   // 渲染完成后，为每条评价自动生成二维码（用各自房型+文字+图片）
   requestAnimationFrame(()=>{
-    state.library.forEach((item,idx)=>{
-      const card = wrap.querySelector('.lib-item[data-libidx="'+idx+'"]');
+    state.library.forEach(item=>{
+      if(!item.id) return;
+      const card = wrap.querySelector('.lib-item[data-libid="'+item.id+'"]');
       if(card) autoQR(card, item, 160);
     });
   });
 }
-function copyLib(i){ navigator.clipboard.writeText(state.library[i].text).then(()=>toast('✅ 已复制')).catch(()=>toast('复制失败')); }
-function toggleLibFull(i){ const el=document.getElementById('libtxt-'+i); if(el) el.classList.toggle('full'); }
-function delLib(i){ state.library.splice(i,1); localStorage.setItem('room_reviews_lib',JSON.stringify(state.library)); loadLib(); toast('已删除'); }
+// 按 id 查找评价条目（多端并发下索引会漂移，id 不会）
+function libById(id){ return state.library.find(x=>x.id===id); }
+function copyLib(id){
+  const it = libById(id);
+  if(it) navigator.clipboard.writeText(it.text).then(()=>toast('✅ 已复制')).catch(()=>toast('复制失败'));
+}
+function toggleLibFull(id){ const el=document.getElementById('libtxt-'+id); if(el) el.classList.toggle('full'); }
+function delLib(id){
+  apiPost('/api/library/delete', { id }).then(r=>{
+    if(r && r.ok){
+      state.library = state.library.filter(x=>x.id!==id);
+      cacheLocal(); loadLib(); toast('已删除（全员同步）');
+    }else toast('⚠️ 删除失败');
+  });
+}
+// 切换评价的使用状态（未使用 ↔ 已使用，云端同步）
+function toggleUsed(id){
+  const it = libById(id);
+  if(!it) return;
+  apiPost('/api/library/toggle', { id }).then(r=>{
+    if(r && r.ok){
+      it.used = r.item.used;
+      cacheLocal(); loadLib();
+      toast(it.used ? '✔ 已标记为已使用' : '🆕 已恢复为未使用');
+    }else toast('⚠️ 操作失败');
+  });
+}
 
 /* ===================== Toast ===================== */
 let toastTimer;
@@ -952,6 +1162,9 @@ function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg
 if(localStorage.getItem('room_reviews_lib')) state.library=JSON.parse(localStorage.getItem('room_reviews_lib'));
 loadUsed();
 renderRooms();
+// 云端同步：启动即拉取共享数据（覆盖本地缓存），并开启定时自动同步
+syncFromServer(true);
+startAutoSync();
 </script>
 </body>
 </html>
