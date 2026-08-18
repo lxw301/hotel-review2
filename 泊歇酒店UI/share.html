@@ -63,17 +63,14 @@
         <span class="tag" id="scoreTag">综合评分 5.0</span>
         <span id="dateStr"></span>
       </div>
-      <div style="margin-top:14px;">
-        <button class="btn copy" onclick="copyText()">📋 一键复制好评文字</button>
-      </div>
     </div>
 
     <div class="card">
       <div class="label"><span class="bar"></span>现场实拍</div>
       <div class="img-grid" id="imgGrid"></div>
-      <div class="save-hint">💡 <b>长按图片</b>即可保存到手机相册<br>或点击下方按钮一键保存全部图片</div>
+      <div class="save-hint">💡 <b>长按图片</b>可保存到手机相册<br>或点击下方按钮一键复制文字并保存图片</div>
       <div style="margin-top:12px;">
-        <button class="btn primary" onclick="saveAll()">📥 一键保存全部图片</button>
+        <button class="btn primary" onclick="copyAndSave()">📋 一键复制文字并保存图片</button>
       </div>
     </div>
 
@@ -83,20 +80,20 @@
         <div class="pf" onclick="jump('meituan')">
           <div class="icon" style="background:#ffe8e0;">🛵</div>
           <div class="name">美团</div>
-          <div class="sub">去美团查看</div>
+          <div class="sub">查看本店·下单</div>
         </div>
         <div class="pf" onclick="jump('douyin')">
           <div class="icon" style="background:#1a1a1a;">🎵</div>
           <div class="name">抖音</div>
-          <div class="sub">去抖音看看</div>
+          <div class="sub">本店主页·团购</div>
         </div>
         <div class="pf" onclick="jump('ctrip')">
           <div class="icon" style="background:#dceeff;">✈️</div>
           <div class="name">携程</div>
-          <div class="sub">去携程预订</div>
+          <div class="sub">查看本店·预订</div>
         </div>
       </div>
-      <div class="save-hint">在微信中点击图标将直接打开对应平台；<br>若已安装 App 也可长按复制链接后在 App 内打开</div>
+      <div class="save-hint">点击直达本店页面；建议用手机相机或浏览器扫码打开</div>
     </div>
   </div>
 
@@ -141,47 +138,53 @@
     grid.innerHTML = imgs.map(src=>`<div class="img-box"><img src="${src}" alt="房型实拍"></div>`).join('');
   }
 
-  // 一键复制好评文字
-  function copyText(){
-    if(!data || !data.text){ toast('没有可复制的内容'); return; }
-    const text = `${data.text}\n—— 来自${data.room||'泊歇酒店'}的真实好评`;
-    if(navigator.clipboard && navigator.clipboard.writeText){
-      navigator.clipboard.writeText(text).then(()=>toast('✅ 好评已复制，可粘贴到任何平台')).catch(()=>fallbackCopy(text));
+  // 一键复制文字 + 保存图片（合并操作）
+  function copyAndSave(){
+    // 1. 复制文字（clipboard API + 兜底）
+    let copied = false;
+    if(data && data.text){
+      const text = `${data.text}\n—— 来自${data.room||'泊歇酒店'}的真实好评`;
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(
+          ()=>{ copied = true; },
+          ()=>{ copied = fallbackCopySilent(text); }
+        );
+      } else {
+        copied = fallbackCopySilent(text);
+      }
+    }
+
+    // 2. 保存图片
+    const imgs=(data&&data.images)||[];
+    if(inWeChat){
+      // 微信内无法触发下载，引导长按保存
+      setTimeout(()=>toast('✅ 文字已复制；图片请长按上方图片保存到相册'), 300);
     } else {
-      fallbackCopy(text);
+      let saved=0;
+      imgs.forEach((src,i)=>{
+        const a=document.createElement('a');
+        a.href=src; a.download=`酒店好评图${i+1}.jpg`;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        saved++;
+      });
+      setTimeout(()=>toast(saved ? `✅ 文字已复制，${saved}张图片已开始保存` : '✅ 文字已复制'), 300);
     }
   }
-  function fallbackCopy(text){
+  function fallbackCopySilent(text){
     const ta=document.createElement('textarea');
     ta.value=text; document.body.appendChild(ta);
     ta.select();
-    try{ document.execCommand('copy'); toast('✅ 好评已复制'); }catch(e){ toast('复制失败，请手动长按选择'); }
+    let ok=false;
+    try{ ok=document.execCommand('copy'); }catch(e){}
     document.body.removeChild(ta);
+    return ok;
   }
 
-  // 一键保存全部图片（微信内下载受限，改为引导长按保存）
-  function saveAll(){
-    const imgs=(data&&data.images)||[];
-    if(!imgs.length){ toast('没有可保存的图片'); return; }
-    if(inWeChat){
-      toast('请长按上方图片，选择"保存图片"到手机');
-      return;
-    }
-    let saved=0;
-    imgs.forEach((src,i)=>{
-      const a=document.createElement('a');
-      a.href=src; a.download=`酒店好评图${i+1}.jpg`;
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      saved++;
-    });
-    toast(`✅ 已开始保存 ${saved} 张图片到相册`);
-  }
-
-  // 平台跳转（微信内直接打开网页版；其他环境尝试 App scheme + 网页兜底）
+  // 平台跳转（美团/抖音=本店专属链接直达店铺页；携程尝试 App scheme + 网页兜底）
   const PLATFORM = {
-    meituan:{ scheme:'imeituan://www.meituan.com', ios:'https://apps.apple.com/cn/app/id423084029', web:'https://www.meituan.com/hotel/' },
-    douyin:{ scheme:'snssdk1128://', ios:'https://apps.apple.com/cn/app/id1142110895', web:'https://www.douyin.com/' },
-    ctrip:{ scheme:'ctrip://', ios:'https://apps.apple.com/cn/app/id260951613', web:'https://m.ctrip.com/webapp/hotel/' },
+    meituan:{ scheme:'imeituan://www.meituan.com/hotel/poi?id=785680069', ios:'https://apps.apple.com/cn/app/id423084029', web:'https://dpurl.cn/OmVo6zgz', direct:true },
+    douyin:{ scheme:'snssdk1128://', ios:'https://apps.apple.com/cn/app/id1142110895', web:'https://v.douyin.com/-fsMl5f2yoE/', direct:true },
+    ctrip:{ scheme:'ctrip://', ios:'https://apps.apple.com/cn/app/id260951613', web:'https://m.ctrip.com/webapp/hotels/detail?hotelid=7498307', direct:true },
   };
   const PLATFORM_NAMES = { meituan:'美团', douyin:'抖音', ctrip:'携程' };
   // 是否在微信内
@@ -191,11 +194,17 @@
     const p=PLATFORM[key];
     if(!p) return;
 
+    // 本店专属链接（美团/抖音短链）：直接跳转，链接自带唤起App并直达本店页面
+    if(p.direct){
+      toast(`正在前往${PLATFORM_NAMES[key]}查看本店…`);
+      setTimeout(()=>{ window.location.href = p.web; }, 300);
+      return;
+    }
+
     // 微信内：window.open / iframe / location.href 唤起 App 基本都受限，
     // 直接在当前页面用 location.href 打开网页版，体验最顺滑。
     if(inWeChat){
       toast(`正在前往${PLATFORM_NAMES[key]}…`);
-      // 延迟一下让 toast 显示，再跳转
       setTimeout(()=>{ window.location.href = p.web; }, 300);
       return;
     }
