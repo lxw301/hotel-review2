@@ -596,6 +596,24 @@ function removeImg(roomId, url){
     else toast('⚠️ 删除失败');
   });
 }
+// 生成好评后，把用过（已入选某条好评）的图片从图库移除，避免重复选用
+// 与句子 markUsed 逻辑一致：在“生成时”即生效（不依赖是否保存）
+async function removeUsedImgs(roomId, urls){
+  if(!roomId || !Array.isArray(urls) || !urls.length) return;
+  const uniq = [...new Set(urls)].filter(Boolean);
+  if(!uniq.length) return;
+  // 本地立即移除并刷新界面（服务端为全员共享，需同步删除）
+  const set = new Set(uniq);
+  state.rooms[roomId] = (state.rooms[roomId] || []).filter(u => !set.has(u));
+  renderRooms();
+  // 顺序逐个移除：每次响应都会累加已删结果，避免并发回写导致图片回加
+  for(const url of uniq){
+    try{
+      const r = await apiPost('/api/rooms/remove', { roomId, url });
+      if(r && r.ok && r.rooms) applyRooms(r.rooms);
+    }catch(e){}
+  }
+}
 
 /* ===================== 生成按钮 ===================== */
 function updateGenBtn(){
@@ -690,6 +708,8 @@ function generateBatchReviews(roomId, count){
   } else {
     for(let i=0;i<count;i++) groups.push(pick2(pool, 3));
   }
+  // 本次用到的图片立即从图库移除，避免后续生成重复选用
+  removeUsedImgs(roomId, [...new Set(groups.flat())]);
 
   // 生成 count 条不重复好评（风格循环交替，共享 blocked 保证跨条不重复）
   const blocked = new Set();
@@ -753,6 +773,8 @@ function startGenerate(){
 
   // 从该房型图库中随机任选 3 张（保证不跨房型）
   state.picked3 = shuffle(state.rooms[room]).slice(0,3);
+  // 这 3 张已被本次好评使用，立即从图库移除（与句子去重逻辑一致）
+  removeUsedImgs(room, state.picked3);
 
   // 生成中页展示
   document.getElementById('genRoomTag').innerHTML = `${ROOMS.find(r=>r.id===room).emoji} ${nameOf(room)}`;
