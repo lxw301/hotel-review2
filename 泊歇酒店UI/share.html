@@ -43,6 +43,8 @@
   .pf .sub { font-size:10px; color:#999; margin-top:2px; }
 
   .footer { text-align:center; font-size:11px; color:#bbb; padding:10px 20px 24px; }
+  .info-row { font-size:13px; color:#333; line-height:1.95; }
+  .info-row a { color:#333; text-decoration:none; }
   .toast { position:fixed; left:50%; bottom:100px; transform:translateX(-50%) translateY(20px); background:rgba(0,0,0,.82); color:#fff; padding:10px 20px; border-radius:20px; font-size:14px; opacity:0; transition:all .3s; pointer-events:none; z-index:999; max-width:85%; text-align:center; }
   .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
 
@@ -106,6 +108,13 @@
     </div>
   </div>
 
+  <div class="card">
+    <div class="label"><span class="bar"></span>店铺信息</div>
+    <div class="info-row">🏨 Boxie·泊歇酒店（渝北回兴轻轨站店）</div>
+    <div class="info-row">📍 回兴街道宝桐路82号东方紫竹院2幢2-2</div>
+    <div class="info-row">📞 <a href="tel:13108980700">13108980700</a></div>
+  </div>
+
   <div class="footer">由 泊歇酒店 好评生成器 分享</div>
   <div class="toast" id="toast"></div>
 
@@ -116,25 +125,34 @@
     <div class="close" onclick="document.getElementById('wxGuide').classList.remove('show')">我知道了，仍要浏览</div>
   </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  // 从 URL 读取分享 ID（share.html#<id>），再通过接口取数据
+  // 从 URL 读取分享 ID（share.html#<id>），再从 Supabase 取数据
+  const SB_URL = 'https://ovwtbmsqwggebmuaefom.supabase.co';
+  const SB_ANON = 'sb_publishable_gSJJIS0nmpZvLzRLOwQzuA_rrZ4GLow';
+  const sb = supabase.createClient(SB_URL, SB_ANON);
+
   const shareId = location.hash.replace(/^#/, '');
   let data = null;
 
-  function loadData(){
-    if(!shareId){
-      document.getElementById('reviewText').textContent = '链接无效或已过期，请重新扫码。';
-      document.getElementById('roomName').textContent = '未知房型';
-      return;
-    }
+  function showInvalid(){
+    document.getElementById('reviewText').textContent = '链接无效或已过期，请重新扫码。';
+    document.getElementById('roomName').textContent = '未知房型';
+  }
+
+  async function loadData(){
+    if(!shareId){ showInvalid(); return; }
     // 兼容旧格式：如果 hash 是 base64 JSON 数据则直接解析
     if(shareId.startsWith('ey')){
       try{ data = JSON.parse(decodeURIComponent(atob(shareId))); render(); return; }catch(e){}
     }
-    fetch('/api/share/' + encodeURIComponent(shareId))
-      .then(r => r.ok ? r.json() : null)
-      .then(d => { data = d; render(); })
-      .catch(() => { data = null; render(); });
+    const { data: row, error } = await sb.from('shares').select('data').eq('id', shareId).maybeSingle();
+    if(row && row.data){
+      data = row.data;
+      // 顾客扫码查看 → 标记已读（用于评价库自动归档）
+      sb.from('shares').update({ viewed:true }).eq('id', shareId).then(()=>{});
+    }
+    render();
   }
 
   function render(){
@@ -198,9 +216,9 @@
 
   // 平台跳转（美团/抖音=本店专属链接直达店铺页；携程尝试 App scheme + 网页兜底）
   const PLATFORM = {
-    meituan:{ scheme:'imeituan://www.meituan.com/hotel/poi?id=785680069', ios:'https://apps.apple.com/cn/app/id423084029', web:'https://dpurl.cn/OmVo6zgz', direct:true },
-    douyin:{ scheme:'snssdk1128://', ios:'https://apps.apple.com/cn/app/id1142110895', web:'https://v.douyin.com/-fsMl5f2yoE/', direct:true },
-    ctrip:{ scheme:'ctrip://', ios:'https://apps.apple.com/cn/app/id260951613', web:'https://m.ctrip.com/webapp/hotels/detail?hotelid=7498307', direct:true },
+    meituan:{ scheme:'imeituan://www.meituan.com/hotel/poi?id=785680069', ios:'https://apps.apple.com/cn/app/id423084029', web:'http://dpurl.cn/Ueu0F7wz', direct:true },
+    douyin:{ scheme:'snssdk1128://', ios:'https://apps.apple.com/cn/app/id1142110895', web:'https://v.douyin.com/qaH_jIPnBN0/', direct:true },
+    ctrip:{ scheme:'ctrip://', ios:'https://apps.apple.com/cn/app/id260951613', web:'https://m.ctrip.com/webapp/hotels/detail?hotelid=7498307&atime=20260819&days=1', direct:true },
   };
   const PLATFORM_NAMES = { meituan:'美团', douyin:'抖音', ctrip:'携程' };
   // 是否在微信内
